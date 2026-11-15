@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Reel Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface":"#121315","surface-dim":"#121315","surface-bright":"#38393b","surface-container-lowest":"#0d0e10","surface-container-low":"#1b1c1e","surface-container":"#1f2022","surface-container-high":"#292a2c","surface-container-highest":"#343537","on-surface":"#e3e2e4","on-surface-variant":"#e3beb6","outline":"#aa8982","outline-variant":"#5b403a","surface-tint":"#ffb4a3","primary":"#ffb4a3","on-primary":"#630f00","primary-container":"#ff5a36","on-primary-container":"#5a0c00","secondary":"#51df9c","on-secondary":"#003822","secondary-container":"#00b173","tertiary":"#ebc300","on-tertiary":"#3b2f00","tertiary-container":"#cba900","error":"#ffb4ab","error-container":"#93000a","inverse-surface":"#e3e2e4","inverse-on-surface":"#303033","background":"#121315","on-background":"#e3e2e4"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{gutter:"1rem","space-xs":"0.25rem","gutter-desktop":"1.25rem",margin:"1rem","space-xl":"2rem","space-md":"0.75rem","space-lg":"1.25rem","margin-desktop":"1.5rem","space-sm":"0.5rem"},fontFamily:{"geist":["Geist","system-ui","sans-serif"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.02em",fontWeight:"600"}],"body-muted":["13px",{lineHeight:"20px",letterSpacing:"0",fontWeight:"400"}],"body-default":["13px",{lineHeight:"20px",letterSpacing:"-0.005em",fontWeight:"400"}],"badge-pill":["11px",{lineHeight:"14px",letterSpacing:"0.01em",fontWeight:"500"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.03em",fontWeight:"700"}],"code-mono":["11px",{lineHeight:"16px",letterSpacing:"0",fontWeight:"500"}],"label-micro":["10px",{lineHeight:"12px",letterSpacing:"0.08em",fontWeight:"600"}],"title-sm":["15px",{lineHeight:"22px",letterSpacing:"-0.01em",fontWeight:"600"}],"stat-numeric":["18px",{lineHeight:"22px",letterSpacing:"-0.02em",fontWeight:"700"}]}}}};
+</script>
+<style>
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0d0e10}
+::-webkit-scrollbar-thumb{background:#343537;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#aa8982}
+body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+.pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
+.reel-card{transition:all .3s ease}
+.reel-card:hover{transform:scale(1.015);box-shadow:0 20px 40px -12px rgba(255,90,54,.15)}
+.tab-active{background:#1f2022;color:#e3e2e4;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.drawer-open{transform:translateX(0)!important}
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body class="bg-surface text-on-surface font-geist min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+
+<!-- HEADER -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/95 backdrop-blur-xl border-b border-surface-container-high">
+<div class="h-14 w-full px-4 lg:px-gutter-desktop flex items-center justify-between gap-4">
+  <div class="flex items-center gap-3 shrink-0">
+    <span class="text-title-sm font-semibold tracking-tight text-on-surface">Reel Engine</span>
+    <div class="h-4 w-px bg-surface-container-high"></div>
+    <div class="relative">
+      <button class="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-low hover:bg-surface-container-high cursor-pointer" id="niche-btn" onclick="document.getElementById('niche-dropdown').classList.toggle('hidden')">
+        <span class="text-body-default text-on-surface" id="niche-label">Loading...</span>
+        <span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+      </button>
+      <div id="niche-dropdown" class="hidden absolute top-full left-0 mt-1 bg-surface-container rounded-lg shadow-lg z-50 min-w-[180px] py-1"></div>
+    </div>
+  </div>
+  <nav class="flex items-center gap-1 shrink-0 overflow-x-auto" id="main-nav">
+    <a class="nav-tab tab-active px-3 py-1.5 rounded text-body-default cursor-pointer whitespace-nowrap" data-tab="radar">Radar</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="library">Library</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="style-cards">Style Cards</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="scripts">Scripts</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="my-reels">My Reels</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="reports">Reports</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="pipeline">Pipeline</a>
+  </nav>
+  <div class="flex items-center gap-3 shrink-0">
+    <div class="hidden xl:flex items-center gap-2">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary pulse-dot"></span>
+      <span class="text-code-mono text-outline" id="stats-bar">Loading...</span>
+    </div>
+  </div>
+</div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="w-full pt-16 pb-12 min-h-screen bg-surface">
+
+<!-- RADAR TAB -->
+<div id="tab-radar" class="tab-content px-4 lg:px-gutter-desktop">
+  <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4">
+    <div class="flex items-center p-1 rounded-lg bg-surface-container-lowest shrink-0">
+      <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="1">24h</button>
+      <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="7">7 days</button>
+      <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="30">30 days</button>
+      <button class="time-btn px-3 py-1.5 rounded text-code-mono bg-surface-container text-primary font-semibold" data-window="0">All</button>
+    </div>
+    <div class="relative flex-1 max-w-2xl">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+        <span class="material-symbols-outlined text-[18px]">search</span>
+      </div>
+      <input class="w-full pl-10 pr-4 py-2 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline text-body-default focus:outline-none focus:bg-surface-container" id="search-input" placeholder="Search captions, transcripts, hooks..." type="text">
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <select class="appearance-none px-3 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-title-sm cursor-pointer focus:outline-none" id="sort-select">
+        <option value="outlier">Outlier Score</option>
+        <option value="velocity">Velocity</option>
+        <option value="views">Total Views</option>
+        <option value="likes">Likes</option>
+        <option value="engagement">Engagement %</option>
+        <option value="comments">Comments</option>
+        <option value="shares">Shares</option>
+        <option value="recent">Newest</option>
+      </select>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="reel-grid"></div>
+  <div class="text-center py-8 text-outline" id="radar-empty" style="display:none">No reels found. Run <code class="text-primary">.\engine.cmd scrape</code> to start scanning.</div>
+</div>
+
+<!-- LIBRARY TAB -->
+<div id="tab-library" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-4">Saved Library</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="library-grid"></div>
+  <div class="text-center py-8 text-outline" id="library-empty" style="display:none">No saved reels yet. Click the bookmark icon on any reel to save it.</div>
+</div>
+
+<!-- STYLE CARDS TAB -->
+<div id="tab-style-cards" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-4">Style Cards</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="cards-grid"></div>
+  <div class="text-center py-8 text-outline" id="cards-empty" style="display:none">No Style Cards yet. Decode reels to generate them.</div>
+</div>
+
+<!-- SCRIPTS TAB -->
+<div id="tab-scripts" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-4">Scripts Studio</h2>
+  <div class="flex flex-col gap-4" id="scripts-list"></div>
+  <div class="text-center py-8 text-outline" id="scripts-empty" style="display:none">No scripts yet.</div>
+</div>
+
+<!-- MY REELS TAB -->
+<div id="tab-my-reels" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-4">My Reels</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="my-reels-grid"></div>
+  <div class="text-center py-8 text-outline" id="my-reels-empty" style="display:none">No self-reels tracked yet.</div>
+</div>
+
+<!-- REPORTS TAB -->
+<div id="tab-reports" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-4">Research Reports</h2>
+  <div class="flex flex-col gap-4" id="reports-list"></div>
+  <div class="text-center py-8 text-outline" id="reports-empty" style="display:none">No reports yet.</div>
+</div>
+
+<!-- PIPELINE TAB -->
+<div id="tab-pipeline" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-6">The Team Today</h2>
+  <div class="rounded-2xl bg-gradient-to-br from-surface-container-low to-surface-container border border-surface-container-high p-6 lg:p-8 mb-6">
+    <div class="flex items-center gap-2 mb-6">
+      <span class="inline-block w-2 h-2 rounded-full bg-secondary pulse-dot"></span>
+      <span class="text-body-default text-secondary font-medium" id="pipeline-status">Loading pipeline...</span>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="pipeline-stages"></div>
+  </div>
+  <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
+    <h3 class="text-title-sm text-on-surface font-semibold mb-3">Run Autopilot</h3>
+    <p class="text-body-default text-on-surface-variant mb-4">One command runs the full pipeline: Scout → Analyst → Decoder → Reporter. Run this from your terminal:</p>
+    <code class="block bg-surface-container-lowest text-primary px-4 py-3 rounded-lg text-code-mono">.\engine.cmd autopilot <span class="text-outline" id="pipeline-niche-slug">real-estate-india</span> --top 10</code>
+  </div>
+</div>
+
+</main>
+
+<!-- DETAIL DRAWER -->
+<div id="drawer-overlay" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" style="display:none" onclick="closeDrawer()"></div>
+<div id="drawer" class="fixed top-0 right-0 z-50 w-full max-w-2xl h-full bg-surface-container-low border-l border-surface-container-high overflow-y-auto transform translate-x-full transition-transform duration-300">
+  <div class="sticky top-0 z-10 bg-surface-container-low/95 backdrop-blur-md border-b border-surface-container-high px-5 py-3 flex items-center justify-between">
+    <div class="min-w-0">
+      <span class="text-label-micro uppercase tracking-wider text-outline" id="d-owner">@creator</span>
+      <h3 class="text-headline-md text-on-surface truncate" id="d-title">Reel</h3>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button onclick="toggleSave()" class="px-3 py-1.5 rounded-lg bg-primary-container text-white text-title-sm font-semibold hover:brightness-110" id="d-save-btn">
+        <span class="material-symbols-outlined text-[18px] align-middle">bookmark</span> Save
+      </button>
+      <a id="d-ig-link" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-body-default">
+        <span class="material-symbols-outlined text-[16px] align-middle">open_in_new</span>
+      </a>
+      <button onclick="closeDrawer()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-high text-on-surface-variant">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+  <div id="d-body" class="px-5 py-4"></div>
+</div>
+
+<!-- FOOTER -->
+<footer class="fixed bottom-0 left-0 right-0 z-40 h-8 bg-surface-container-lowest/95 backdrop-blur-md border-t border-surface-container-high flex items-center justify-between px-4 lg:px-gutter-desktop">
+  <div class="flex items-center gap-3">
+    <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-secondary">fiber_manual_record</span><span class="text-code-mono text-outline">ENGINE: READY</span></div>
+    <div class="h-3 w-px bg-surface-container-high"></div>
+    <span class="text-code-mono text-outline" id="footer-stats">...</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <span class="text-code-mono text-outline">PREVIEW: 1080x1920 (9:16)</span>
+    <div class="h-3 w-px bg-surface-container-high"></div>
+    <span class="text-code-mono text-outline">STUDIO V1.0</span>
+  </div>
+</footer>
+
+<script>
+// ── State ──
+let S = { window: 0, sort: 'outlier', q: '', tab: 'radar', niche: null, drawerSc: null, drawerData: null };
+
+// ── Helpers ──
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const fmt = n => { if(n==null) return '-'; n=+n; if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return ''+Math.round(n); };
+const ago = iso => { if(!iso) return ''; const ms=Date.now()-new Date(iso).getTime(); const m=ms/60000; if(m<60) return Math.round(m)+'m'; const h=m/60; if(h<24) return Math.round(h)+'h'; return Math.round(h/24)+'d'; };
+const color = hex => { if(!hex||typeof hex!=='string') return '#888'; return hex.startsWith('#') ? hex : '#'+hex; };
+async function api(path) { const r = await fetch('/api/'+path); return r.json(); }
+function esc(s) { const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+
+// ── Tab Navigation ──
+$$('.nav-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+function switchTab(tab) {
+  S.tab = tab;
+  $$('.nav-tab').forEach(t => { t.classList.toggle('tab-active', t.dataset.tab===tab); t.classList.toggle('text-on-surface-variant', t.dataset.tab!==tab); });
+  $$('.tab-content').forEach(c => c.style.display = c.id === 'tab-'+tab ? '' : 'none');
+  if(tab==='radar') loadRadar();
+  else if(tab==='library') loadLibrary();
+  else if(tab==='style-cards') loadCards();
+  else if(tab==='scripts') loadScripts();
+  else if(tab==='my-reels') loadMyReels();
+  else if(tab==='reports') loadReports();
+  else if(tab==='pipeline') loadPipeline();
+}
+
+// ── Time / Sort / Search ──
+$$('.time-btn').forEach(b => b.addEventListener('click', () => {
+  S.window = +b.dataset.window;
+  $$('.time-btn').forEach(x => { x.classList.toggle('bg-surface-container', x===b); x.classList.toggle('text-primary', x===b); x.classList.toggle('font-semibold', x===b); x.classList.toggle('text-outline', x!==b); });
+  loadRadar();
+}));
+$('#sort-select').addEventListener('change', e => { S.sort = e.target.value; loadRadar(); });
+let searchTimer;
+$('#search-input').addEventListener('input', e => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { S.q = e.target.value; loadRadar(); }, 400); });
+
+// ── Reel Card HTML ──
+function reelCard(r) {
+  const thumb = r.has_thumb ? `/media/${r.shortcode}/thumb.jpg` : '';
+  const outlier = r.outlier ? `<span class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-primary-container text-white text-label-micro font-bold uppercase tracking-wider">${r.outlier}x ${r.outlier_basis==='likes'?'LIKES':'OUTLIER'}</span>` : '';
+  const decoded = r.has_analysis ? `<span class="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded-full text-label-micro font-bold" style="background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.3);color:#3ECF8E">DECODED</span>` : '';
+  const saved = r.saved ? `<span class="absolute top-8 right-2 z-10"><span class="material-symbols-outlined text-[18px] text-tertiary">bookmark</span></span>` : '';
+  const card = r.has_card ? `<span class="absolute top-8 left-2 z-10 px-1.5 py-0.5 rounded-full text-label-micro" style="background:rgba(235,195,0,.12);border:1px solid rgba(235,195,0,.3);color:#ebc300">STYLE CARD</span>` : '';
+  const bg = thumb ? `background-image:url('${thumb}');background-size:cover;background-position:center;` : 'background:#1b1c1e;';
+  return `<div class="reel-card group relative aspect-[9/16] rounded-xl overflow-hidden bg-surface-container-low cursor-pointer flex flex-col justify-between" style="${bg}" onclick="openDrawer('${r.shortcode}')">
+    ${outlier}${decoded}${saved}${card}
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    <div class="relative z-10 mt-auto p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+      <p class="text-body-default text-white/90 font-medium truncate">@${esc(r.owner||'unknown')}</p>
+      <div class="flex items-center gap-2 mt-1 text-code-mono text-white/70">
+        <span>${fmt(r.views_best||r.likes)} ${r.views_best&&r.views_best>0?'views':'likes'}</span>
+        <span class="w-px h-3 bg-white/30"></span>
+        <span>${fmt(r.likes)} <span class="material-symbols-outlined text-[12px]">favorite</span></span>
+        ${r.comments?`<span class="w-px h-3 bg-white/30"></span><span>${fmt(r.comments)} <span class="material-symbols-outlined text-[12px]">comment</span></span>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Radar ──
+async function loadRadar() {
+  const params = `window=${S.window}&sort=${S.sort}&limit=60${S.niche?'&niche='+S.niche:''}${S.q?'&q='+encodeURIComponent(S.q):''}`;
+  const reels = await api('reels?'+params);
+  const grid = $('#reel-grid');
+  if(!reels.length) { grid.innerHTML=''; $('#radar-empty').style.display=''; return; }
+  $('#radar-empty').style.display='none';
+  grid.innerHTML = reels.map(reelCard).join('');
+}
+
+// ── Library ──
+async function loadLibrary() {
+  const reels = await api(`reels?saved=1&window=0&sort=outlier&limit=100${S.niche?'&niche='+S.niche:''}`);
+  const grid = $('#library-grid');
+  if(!reels.length) { grid.innerHTML=''; $('#library-empty').style.display=''; return; }
+  $('#library-empty').style.display='none';
+  grid.innerHTML = reels.map(reelCard).join('');
+}
+
+// ── Style Cards ──
+async function loadCards() {
+  const cards = await api(`cards${S.niche?'?niche='+S.niche:''}`);
+  const grid = $('#cards-grid');
+  if(!cards.length) { grid.innerHTML=''; $('#cards-empty').style.display=''; return; }
+  $('#cards-empty').style.display='none';
+  grid.innerHTML = cards.map(c => {
+    const pal = (c.colour?.palette||[]).map(h=>`<span class="w-5 h-5 rounded-full border border-surface-container-high inline-block" style="background:${color(h)}"></span>`).join('');
+    const src = c._kind==='house' ? (c.source||[]).join(', ') : c.source;
+    return `<div class="rounded-xl bg-surface-container-low border border-surface-container-high p-4 hover:border-outline-variant transition-colors fade-in cursor-pointer" onclick="${c._shortcode?`openDrawer('${c._shortcode}')`:''}">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-title-sm text-on-surface font-semibold">${esc(c.name||'Untitled')}</h3>
+        <span class="text-badge-pill px-2 py-0.5 rounded-full ${c._kind==='house'?'bg-tertiary/10 text-tertiary border border-tertiary/30':'bg-primary/10 text-primary border border-primary/30'}">${c._kind==='house'?'HOUSE':'REEL'}</span>
+      </div>
+      <p class="text-body-muted text-on-surface-variant mb-3 line-clamp-2">${esc(c.summary||'')}</p>
+      <div class="flex items-center gap-1 mb-2">${pal}</div>
+      <div class="flex flex-wrap gap-2 text-code-mono text-outline">
+        ${c.hook?.type?`<span class="px-2 py-0.5 rounded bg-surface-container">${esc(c.hook.type)}</span>`:''}
+        ${c.pacing?.cuts_per_10s!=null?`<span class="px-2 py-0.5 rounded bg-surface-container">${c.pacing.cuts_per_10s} cuts/10s</span>`:''}
+        ${c.captions?.style?`<span class="px-2 py-0.5 rounded bg-surface-container">${esc(c.captions.style)} captions</span>`:''}
+      </div>
+      <div class="mt-3 text-code-mono text-outline">src: ${esc(src||'?')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Scripts ──
+async function loadScripts() {
+  const scripts = await api(`scripts${S.niche?'?niche='+S.niche:''}`);
+  const list = $('#scripts-list');
+  if(!scripts.length) { list.innerHTML=''; $('#scripts-empty').style.display=''; return; }
+  $('#scripts-empty').style.display='none';
+  list.innerHTML = scripts.map(s => `<div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5 fade-in">
+    <h3 class="text-title-sm text-on-surface font-semibold mb-2">${esc(s.title)}</h3>
+    <pre class="text-body-default text-on-surface-variant whitespace-pre-wrap max-h-64 overflow-y-auto">${esc(s.text)}</pre>
+  </div>`).join('');
+}
+
+// ── My Reels ──
+async function loadMyReels() {
+  const reels = await api(`reels?mine=1&window=0&sort=recent&limit=60${S.niche?'&niche='+S.niche:''}`);
+  const grid = $('#my-reels-grid');
+  if(!reels.length) { grid.innerHTML=''; $('#my-reels-empty').style.display=''; return; }
+  $('#my-reels-empty').style.display='none';
+  grid.innerHTML = reels.map(reelCard).join('');
+}
+
+// ── Reports ──
+function mdToHtml(md) {
+  let h = esc(md);
+  h = h.replace(/^### (.+)$/gm, '<h4 class="text-title-sm text-tertiary font-semibold mt-4 mb-2">$1</h4>');
+  h = h.replace(/^## (.+)$/gm, '<h3 class="text-headline-sm text-secondary font-semibold mt-6 mb-3">$1</h3>');
+  h = h.replace(/^# (.+)$/gm, '<h2 class="text-headline-md text-on-surface font-bold mt-6 mb-3">$1</h2>');
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong class="text-on-surface">$1</strong>');
+  h = h.replace(/^\| (.+) \|$/gm, (m, row) => {
+    const cells = row.split(' | ').map(c => c.trim());
+    return '<tr>' + cells.map(c => `<td class="px-3 py-2 border border-surface-container-high text-body-default">${c}</td>`).join('') + '</tr>';
+  });
+  h = h.replace(/^\|[-| ]+\|$/gm, '');
+  h = h.replace(/(<tr>[\s\S]*?<\/tr>)/g, (m) => {
+    if(!m.includes('<table')) return '<table class="w-full border-collapse rounded-lg overflow-hidden mb-4 text-on-surface-variant">' + m + '</table>';
+    return m;
+  });
+  h = h.replace(/((?:<table[^>]*>(?:<tr>.*?<\/tr>\s*)+))<\/table>\s*(<tr>.*?<\/tr>)/g, '$1$2</table>');
+  h = h.replace(/^- (.+)$/gm, '<li class="ml-4 text-body-default text-on-surface-variant list-disc">$1</li>');
+  h = h.replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 text-body-default text-on-surface-variant list-decimal" value="$1">$2</li>');
+  h = h.replace(/^---$/gm, '<hr class="border-surface-container-high my-4">');
+  h = h.replace(/\n\n/g, '<br><br>');
+  return h;
+}
+async function loadReports() {
+  const reports = await api(`reports${S.niche?'?niche='+S.niche:''}`);
+  const list = $('#reports-list');
+  if(!reports.length) { list.innerHTML=''; $('#reports-empty').style.display=''; return; }
+  $('#reports-empty').style.display='none';
+  list.innerHTML = reports.map(r => {
+    const date = r.file.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || '';
+    return `<div class="rounded-xl bg-surface-container-low border border-surface-container-high fade-in">
+      <div class="px-5 py-4 border-b border-surface-container-high flex items-center justify-between cursor-pointer" onclick="this.parentElement.querySelector('.report-body').classList.toggle('hidden')">
+        <div>
+          <span class="text-label-micro uppercase tracking-wider text-outline">${esc(date)}</span>
+          <h3 class="text-title-sm text-on-surface font-semibold">${esc(r.title)}</h3>
+        </div>
+        <span class="material-symbols-outlined text-outline">expand_more</span>
+      </div>
+      <div class="report-body px-5 py-4 text-body-default text-on-surface-variant">${mdToHtml(r.text)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Detail Drawer ──
+async function openDrawer(sc) {
+  S.drawerSc = sc;
+  const d = await api('reels/'+sc);
+  S.drawerData = d;
+  $('#d-owner').textContent = '@'+(d.owner||'unknown');
+  $('#d-title').textContent = (d.analysis?.metrics?.hook_text || d.caption || sc).slice(0,80);
+  $('#d-ig-link').href = `https://www.instagram.com/reel/${sc}/`;
+  $('#d-save-btn').innerHTML = `<span class="material-symbols-outlined text-[18px] align-middle">${d.saved?'bookmark':'bookmark_border'}</span> ${d.saved?'Saved':'Save'}`;
+
+  let html = '';
+  const v = d.plays||d.views||0;
+  const hasViews = v > 0;
+  const m2 = d.analysis?.metrics||{};
+  const likesComments = (d.likes||0)+(d.comments||0);
+  html += `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+    <div class="p-3 rounded-lg bg-surface-container border border-surface-container-high">
+      <div class="text-label-micro uppercase text-outline tracking-wider mb-1">Outlier</div>
+      <div class="text-stat-numeric text-primary-container font-bold">${d.outlier?d.outlier+'x':'-'}</div>
+      <div class="text-code-mono text-outline">${d.outlier_basis||'likes'} basis</div>
+    </div>
+    <div class="p-3 rounded-lg bg-surface-container border border-surface-container-high">
+      <div class="text-label-micro uppercase text-outline tracking-wider mb-1">${hasViews?'Views':'Likes'}</div>
+      <div class="text-stat-numeric text-on-surface font-bold">${fmt(hasViews?v:d.likes)}</div>
+    </div>
+    <div class="p-3 rounded-lg bg-surface-container border border-surface-container-high">
+      <div class="text-label-micro uppercase text-outline tracking-wider mb-1">${hasViews?'Engagement':'Comments'}</div>
+      <div class="text-stat-numeric text-secondary font-bold">${hasViews?(d.engagement?d.engagement+'%':'-'):fmt(d.comments)}</div>
+    </div>
+    <div class="p-3 rounded-lg bg-surface-container border border-surface-container-high">
+      <div class="text-label-micro uppercase text-outline tracking-wider mb-1">${m2.duration?'Duration':'Velocity'}</div>
+      <div class="text-stat-numeric text-on-surface font-bold">${m2.duration?Math.round(m2.duration)+'s':fmt(d.velocity)+'/h'}</div>
+    </div>
+  </div>`;
+
+  html += `<div class="flex flex-wrap gap-3 mb-5 text-code-mono">
+    <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${fmt(d.likes)} likes</span>
+    <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${fmt(d.comments)} comments</span>
+    <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${fmt(d.shares||0)} shares</span>
+    <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${d.duration?Math.round(d.duration)+'s':'-'}</span>
+    <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${ago(d.posted_at)} ago</span>
+  </div>`;
+
+  html += `<div class="mb-5"><img src="/media/${sc}/thumb.jpg" alt="thumb" class="w-full max-w-xs rounded-lg border border-surface-container-high" onerror="this.style.display='none'"></div>`;
+
+  // === INSIGHTS FIRST (from style card) ===
+  if(d.stylecard) {
+    const sc_data = d.stylecard;
+    // WHY THIS WORKED — lead insight, most important
+    if(sc_data.why_it_worked?.length) {
+      html += `<div class="mb-5 p-4 rounded-xl border border-secondary/30 bg-secondary/5">
+        <h4 class="text-title-sm text-secondary font-semibold mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">lightbulb</span> Why This Worked</h4>
+        <ul class="space-y-2">${sc_data.why_it_worked.map(w=>`<li class="text-body-default text-on-surface-variant flex gap-2"><span class="text-secondary shrink-0 mt-0.5">→</span><span>${esc(w)}</span></li>`).join('')}</ul>
+      </div>`;
+    }
+    // HOOK ANALYSIS
+    if(sc_data.hook) {
+      html += `<div class="mb-5 p-4 rounded-xl border border-tertiary/30 bg-tertiary/5">
+        <h4 class="text-title-sm text-tertiary font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">bolt</span> Hook (${esc(sc_data.hook.type||'?')} · ${sc_data.hook.seconds||'?'}s)</h4>
+        <p class="text-body-default text-on-surface font-medium mb-2" style="font-size:15px">"${esc(sc_data.hook.text||'-')}"</p>
+        ${sc_data.hook.visual?`<p class="text-body-muted text-outline"><strong>Visual:</strong> ${esc(sc_data.hook.visual)}</p>`:''}
+        ${sc_data.hook.title_overlay?`<p class="text-body-muted text-outline mt-1"><strong>Title overlay:</strong> ${esc(sc_data.hook.title_overlay)}</p>`:''}
+      </div>`;
+    }
+    // STRUCTURE TIMELINE
+    if(sc_data.structure?.length) {
+      html += `<div class="mb-5 p-4 rounded-xl bg-surface-container border border-surface-container-high">
+        <h4 class="text-title-sm text-on-surface font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary-container">timeline</span> Video Structure</h4>
+        <div class="space-y-1">${sc_data.structure.map(s=>`<div class="flex gap-2 text-body-default"><span class="text-code-mono text-outline shrink-0 w-20">${s.start?.toFixed(0)}–${s.end?.toFixed(0)}s</span><span class="text-label-micro text-primary-container uppercase w-16 shrink-0">${esc(s.part)}</span><span class="text-on-surface-variant">${esc(s.what)}</span></div>`).join('')}</div>
+      </div>`;
+    }
+    // DO & DON'T — the practical playbook
+    if(sc_data.do?.length || sc_data.dont?.length) {
+      html += `<div class="mb-5 grid grid-cols-1 md:grid-cols-2 gap-3">`;
+      if(sc_data.do?.length) {
+        html += `<div class="p-4 rounded-xl border border-secondary/30 bg-secondary/5">
+          <h4 class="text-label-micro uppercase text-secondary tracking-wider mb-2">Do this</h4>
+          <ul class="space-y-1.5">${sc_data.do.map(d_=>`<li class="text-body-default text-on-surface-variant text-[13px] flex gap-1.5"><span class="text-secondary shrink-0">+</span>${esc(d_)}</li>`).join('')}</ul>
+        </div>`;
+      }
+      if(sc_data.dont?.length) {
+        html += `<div class="p-4 rounded-xl border border-error/30 bg-error/5">
+          <h4 class="text-label-micro uppercase text-error tracking-wider mb-2">Avoid</h4>
+          <ul class="space-y-1.5">${sc_data.dont.map(d_=>`<li class="text-body-default text-on-surface-variant text-[13px] flex gap-1.5"><span class="text-error shrink-0">-</span>${esc(d_)}</li>`).join('')}</ul>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    // STYLE CARD production details
+    html += `<div class="mb-5 p-4 rounded-xl border border-tertiary/30 bg-tertiary/5">
+      <h4 class="text-title-sm text-tertiary font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">style</span> Production Style: ${esc(sc_data.name||'')}</h4>
+      <p class="text-body-default text-on-surface-variant mb-2">${esc(sc_data.summary||'')}</p>
+      ${sc_data.captions?`<div class="text-body-muted text-outline mt-1"><strong>Captions:</strong> ${esc(sc_data.captions.font||'')} ${sc_data.captions.weight||''}, ${esc(sc_data.captions.style||'phrase')}, ${esc(sc_data.captions.case||'')}${sc_data.captions.highlight_color?', highlight '+sc_data.captions.highlight_color:''}</div>`:''}
+      ${sc_data.audio?`<div class="text-body-muted text-outline mt-1"><strong>Audio:</strong> ${esc(typeof sc_data.audio==='string'?sc_data.audio:sc_data.audio.music||'-')}</div>`:''}
+      ${sc_data.shots?`<div class="text-body-muted text-outline mt-1"><strong>Shot mix:</strong> ${Object.entries(sc_data.shots.mix||{}).map(([k,v])=>k+' '+Math.round(v*100)+'%').join(', ')}</div>`:''}
+      ${sc_data.cta?`<div class="text-body-muted text-outline mt-1"><strong>CTA:</strong> ${esc(sc_data.cta)}</div>`:''}
+    </div>`;
+  }
+
+  // === BREAKDOWN (how to remake) ===
+  if(d.breakdown) {
+    html += `<div class="mb-5 p-4 rounded-xl border border-primary-container/30 bg-primary-container/5">
+      <h4 class="text-title-sm text-primary-container font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">menu_book</span> How To Remake This</h4>
+      <div class="text-body-default text-on-surface-variant whitespace-pre-wrap max-h-80 overflow-y-auto leading-relaxed">${esc(d.breakdown)}</div>
+    </div>`;
+  }
+
+  // === TECHNICAL DATA (collapsible) ===
+  if(d.analysis) {
+    const m = d.analysis.metrics;
+    html += `<details class="mb-5"><summary class="cursor-pointer text-title-sm text-outline font-semibold mb-3 flex items-center gap-2 hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">expand_more</span> Technical Details</summary>`;
+
+    html += `<div class="mt-3 mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
+      <h4 class="text-label-micro uppercase text-outline tracking-wider mb-3">Pacing &amp; Cuts</h4>
+      <div class="grid grid-cols-3 gap-3 text-center">
+        <div><div class="text-stat-numeric text-on-surface">${m.shots}</div><div class="text-label-micro text-outline uppercase">shots</div></div>
+        <div><div class="text-stat-numeric text-on-surface">${m.cuts_per_10s}</div><div class="text-label-micro text-outline uppercase">cuts/10s</div></div>
+        <div><div class="text-stat-numeric text-on-surface">${m.avg_shot_seconds?.toFixed(1)}s</div><div class="text-label-micro text-outline uppercase">avg shot</div></div>
+      </div>
+      <div class="mt-3 grid grid-cols-3 gap-3 text-center">
+        <div><div class="text-stat-numeric text-on-surface">${m.words_per_minute?.toFixed(0)}</div><div class="text-label-micro text-outline uppercase">WPM</div></div>
+        <div><div class="text-stat-numeric text-on-surface">${Math.round(m.speech_ratio*100)}%</div><div class="text-label-micro text-outline uppercase">speech</div></div>
+        <div><div class="text-stat-numeric text-on-surface">${m.first_cut_at?.toFixed(1)}s</div><div class="text-label-micro text-outline uppercase">1st cut</div></div>
+      </div>
+    </div>`;
+
+    if(d.analysis.transcript?.text) {
+      const hookWords = (m.hook_text||'').split(/\s+/).filter(Boolean);
+      let txt = esc(d.analysis.transcript.text);
+      if(hookWords.length && m.hook_text) {
+        const hookEsc = esc(m.hook_text);
+        const idx = txt.toLowerCase().indexOf(hookEsc.toLowerCase());
+        if(idx>=0) {
+          txt = txt.slice(0,idx) + `<span class="px-1 py-0.5 rounded" style="background:rgba(255,212,0,.15);color:#FFD400">${txt.slice(idx,idx+hookEsc.length)}</span>` + txt.slice(idx+hookEsc.length);
+        }
+      }
+      html += `<div class="mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
+        <h4 class="text-label-micro uppercase text-outline tracking-wider mb-2">Transcript</h4>
+        <p class="text-body-default text-on-surface-variant leading-relaxed max-h-48 overflow-y-auto">${txt}</p>
+      </div>`;
+    }
+
+    if(d.analysis.colour) {
+      const pal = (d.analysis.colour.palette||[]).map(p=>`<span class="w-8 h-8 rounded-lg border border-surface-container-high inline-block" style="background:${color(p.hex||p)}" title="${esc(p.hex||p)}"></span>`).join(' ');
+      html += `<div class="mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
+        <h4 class="text-label-micro uppercase text-outline tracking-wider mb-2">Colour Profile</h4>
+        <div class="flex gap-2 mb-2">${pal}</div>
+        <p class="text-body-muted text-outline">Grade: ${esc(d.analysis.colour.grade||'-')}</p>
+      </div>`;
+    }
+
+    const frames = d.analysis.frames||[];
+    if(frames.length) {
+      html += `<div class="mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
+        <h4 class="text-label-micro uppercase text-outline tracking-wider mb-2">Key Frames</h4>
+        <div class="flex gap-2 overflow-x-auto pb-2">
+          ${frames.map((f,i)=>`<div class="shrink-0 w-20"><img src="/media/${sc}/frames/${String(i).padStart(2,'0')}.jpg" class="w-20 h-36 object-cover rounded-lg border border-surface-container-high" onerror="this.style.display='none'"><div class="text-code-mono text-outline text-center mt-1">${f.t?.toFixed(1)}s</div></div>`).join('')}
+        </div>
+      </div>`;
+    }
+    html += `</details>`;
+  }
+
+  if(d.caption) {
+    html += `<div class="p-4 rounded-xl bg-surface-container border border-surface-container-high">
+      <h4 class="text-title-sm text-on-surface font-semibold mb-2">Caption</h4>
+      <p class="text-body-default text-on-surface-variant max-h-32 overflow-y-auto">${esc(d.caption)}</p>
+    </div>`;
+  }
+
+  $('#d-body').innerHTML = html;
+  $('#drawer-overlay').style.display = '';
+  $('#drawer').classList.add('drawer-open');
+}
+
+function closeDrawer() {
+  $('#drawer').classList.remove('drawer-open');
+  $('#drawer-overlay').style.display = 'none';
+  S.drawerSc = null;
+}
+
+async function toggleSave() {
+  if(!S.drawerSc) return;
+  const newVal = S.drawerData?.saved ? 0 : 1;
+  await fetch(`/api/reels/${S.drawerSc}/save`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({saved:!!newVal}) });
+  openDrawer(S.drawerSc);
+  if(S.tab==='library') loadLibrary();
+}
+
+// ── Stats ──
+async function loadStats() {
+  const s = await api(`stats${S.niche?'?niche='+S.niche:''}`);
+  const txt = `${s.total||0} reels · ${s.creators||0} creators · ${s.analyzed||0} decoded`;
+  $('#stats-bar').textContent = txt;
+  $('#footer-stats').textContent = `${s.total||0} REELS · ${s.analyzed||0} DECODED`;
+}
+
+// ── Pipeline ──
+const AGENT_META = {
+  Scout: {color:'#51df9c', icon:'radar', desc:'Scrapes hashtags, harvests reels, discovers creators'},
+  Analyst: {color:'#ffb4a3', icon:'analytics', desc:'Downloads reels, transcribes, detects cuts & colors'},
+  Decoder: {color:'#ebc300', icon:'style', desc:'Generates style cards and breakdowns'},
+  Reporter: {color:'#ff5a36', icon:'summarize', desc:'Writes pipeline reports'},
+};
+async function loadPipeline() {
+  const data = await api(`pipeline${S.niche?'?niche='+S.niche:''}`);
+  const grid = $('#pipeline-stages');
+  const total = data.stages[0]?.count || 0;
+  $('#pipeline-status').textContent = `Pipeline: ${total} reels in ${S.niche||'all niches'}`;
+  $('#pipeline-niche-slug').textContent = S.niche || 'real-estate-india';
+  grid.innerHTML = data.stages.map(s => {
+    const m = AGENT_META[s.name] || {};
+    const pct = total ? Math.round((s.count/total)*100) : 0;
+    const barW = s.name==='Scout' ? 100 : pct;
+    return `<div class="rounded-xl bg-surface-container border border-surface-container-high p-4 fade-in">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-[24px]" style="color:${m.color||'#888'}">${s.icon}</span>
+        <div>
+          <div class="text-title-sm text-on-surface font-semibold">${s.name}</div>
+          <div class="text-code-mono text-outline">${m.desc||''}</div>
+        </div>
+      </div>
+      <div class="text-stat-numeric font-bold mb-1" style="color:${m.color||'#888'}">${s.count}</div>
+      <div class="text-code-mono text-outline mb-2">${s.label}</div>
+      <div class="h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+        <div class="h-full rounded-full transition-all" style="width:${barW}%;background:${m.color||'#888'}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Niche Switcher ──
+async function loadNiches() {
+  const niches = await api('niches');
+  const dd = $('#niche-dropdown');
+  if(!niches.length) return;
+  S.niche = niches[0].slug;
+  $('#niche-label').textContent = niches[0].name;
+  dd.innerHTML = niches.map(n => `<button class="block w-full text-left px-3 py-2 text-body-default text-on-surface hover:bg-surface-container-high rounded transition-colors" data-slug="${n.slug}">${esc(n.name)}</button>`).join('');
+  dd.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    S.niche = b.dataset.slug;
+    $('#niche-label').textContent = b.textContent;
+    dd.classList.add('hidden');
+    loadStats(); switchTab(S.tab);
+  }));
+}
+document.addEventListener('click', e => { if(!e.target.closest('#niche-btn')&&!e.target.closest('#niche-dropdown')) $('#niche-dropdown').classList.add('hidden'); });
+
+// ── Init ──
+(async function() {
+  await loadNiches();
+  loadStats();
+  loadRadar();
+})();
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape' && S.drawerSc) closeDrawer();
+});
+</script>
+</body>
+</html>

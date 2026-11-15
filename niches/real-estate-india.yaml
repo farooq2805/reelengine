@@ -1,0 +1,24 @@
+name: Real estate India
+slug: real-estate-india
+hashtags:
+- realestateindia
+- mumbairealestate
+- punerealestate
+- bangalorerealestate
+- gurgaonrealestate
+- noidarealestate
+- hyderabadrealestate
+- chennairealestate
+- luxuryhomesindia
+- propertyinvestment
+- homebuyingtips
+- reraupdate
+creators:
+- nithyasekhar
+- thepropertist
+- upturnprivateoffice
+self_username: ''
+days_back: 30
+max_reels_per_creator: 30
+max_reels_per_hashtag: 60
+outlier_threshold: 3.0

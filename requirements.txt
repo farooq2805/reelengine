@@ -1,0 +1,10 @@
+instaloader>=4.16
+yt-dlp
+faster-whisper>=1.2
+scenedetect>=0.7
+opencv-python
+numpy
+requests
+pyyaml
+fastapi
+uvicorn[standard]

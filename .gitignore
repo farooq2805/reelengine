@@ -1,0 +1,14 @@
+data/
+edit/node_modules/
+edit/public/
+edit/props/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

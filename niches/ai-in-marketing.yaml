@@ -1,0 +1,34 @@
+# Niche recipe: AI in Marketing — tools, trends, workflows for marketers using AI.
+# Run `engine discover ai-in-marketing` to auto-add creators.
+
+name: AI in Marketing
+slug: ai-in-marketing
+
+# Hashtags scanned for top and recent reels (no # sign).
+hashtags:
+  - aimarketing
+  - aiinmarketing
+  - marketingai
+  - aitools
+  - aitoolsformarketing
+  - aicontentcreation
+  - aigeneratedcontent
+  - chatgptmarketing
+  - aiforbusiness
+  - digitalmarketingai
+  - aisocialmedia
+  - aiautomation
+  - aivideotools
+  - contentcreatortools
+  - marketingautomation
+
+# Creators whose every new reel is tracked (Instagram usernames, no @).
+creators: []
+
+# Your own account
+self_username: ""
+
+days_back: 30
+max_reels_per_creator: 30
+max_reels_per_hashtag: 60
+outlier_threshold: 3.0
