@@ -130,6 +130,37 @@ def cmd_schedule(a):
           f'/TR "\\"{cmdfile}\\" daily {a.niche}" /F')
 
 
+def _cmd_agents(a):
+    from .agents import get_agent_status, run_agent, scheduler_status, start_scheduler
+    if a.action == "status":
+        ss = scheduler_status()
+        print(f"Scheduler: {'RUNNING' if ss['running'] else 'STOPPED'}")
+        for ag in get_agent_status():
+            lr = ag["last_run"]
+            last = f"last: {lr['finished_at'] or lr['started_at']} — {lr['summary']}" if lr else "never run"
+            print(f"  {ag['name']:10s} | runs: {ag['total_runs']:3d} | items: {ag['total_items']:4d} | {last}")
+    elif a.action == "run":
+        agent = a.agent
+        if not agent:
+            print("Specify --agent: scout | analyst | decoder | reporter")
+            return
+        niche = a.niche
+        print(f"Running {agent} for {niche}...")
+        result = run_agent(agent, niche)
+        print(f"  → {result['summary']}")
+    else:
+        print("Starting agent scheduler (press Ctrl+C to stop)...")
+        start_scheduler()
+        try:
+            while True:
+                import time
+                time.sleep(1)
+        except KeyboardInterrupt:
+            from .agents import stop_scheduler
+            stop_scheduler()
+            print("\nStopped.")
+
+
 def cmd_serve(a):
     import uvicorn
 
@@ -260,6 +291,12 @@ def main(argv=None):
     sp.add_argument("--harvest", help="harvest file with shortcodes")
     sp.set_defaults(fn=lambda a: __import__("engine.autopilot", fromlist=["x"]).autopilot(
         a.niche, top=a.top, window=a.window, harvest_file=a.harvest))
+
+    sp = sub.add_parser("agents", help="run the autonomous agent scheduler")
+    sp.add_argument("action", choices=["start", "status", "run"], default="start", nargs="?")
+    sp.add_argument("--agent", help="run a specific agent: scout | analyst | decoder | reporter")
+    niche_arg(sp)
+    sp.set_defaults(fn=lambda a: _cmd_agents(a))
 
     sp = sub.add_parser("serve", help="open the dashboard")
     sp.add_argument("--port", type=int, default=8765)

@@ -175,6 +175,46 @@ def pipeline(niche: str | None = None):
     }
 
 
+@app.get("/api/agents")
+def agents_status():
+    from .agents import get_agent_status, scheduler_status
+    return {"agents": get_agent_status(), "scheduler": scheduler_status()}
+
+
+@app.get("/api/agents/{agent}/logs")
+def agent_logs(agent: str, limit: int = 20):
+    from .agents import get_agent_logs
+    return get_agent_logs(agent, limit)
+
+
+@app.get("/api/agents/live-log")
+def live_log(limit: int = 50):
+    from .agents import get_live_log
+    return get_live_log(limit)
+
+
+@app.post("/api/agents/start")
+def agents_start():
+    from .agents import start_scheduler
+    return start_scheduler()
+
+
+@app.post("/api/agents/stop")
+def agents_stop():
+    from .agents import stop_scheduler
+    return stop_scheduler()
+
+
+@app.post("/api/agents/{agent}/run")
+def agent_run_now(agent: str, niche: str | None = None):
+    from .agents import run_agent
+    import threading
+    n = niche or (list_niches() or ["real-estate-india"])[0]
+    t = threading.Thread(target=run_agent, args=(agent, n), daemon=True)
+    t.start()
+    return {"status": "started", "agent": agent, "niche": n}
+
+
 @app.get("/media/{sc}/{path:path}")
 def media(sc: str, path: str):
     base = (REELS / sc).resolve()

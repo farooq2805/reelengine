@@ -49,7 +49,7 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="scripts">Scripts</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="my-reels">My Reels</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="reports">Reports</a>
-    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="pipeline">Pipeline</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="pipeline">Agents</a>
   </nav>
   <div class="flex items-center gap-3 shrink-0">
     <div class="hidden xl:flex items-center gap-2">
@@ -130,20 +130,29 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
   <div class="text-center py-8 text-outline" id="reports-empty" style="display:none">No reports yet.</div>
 </div>
 
-<!-- PIPELINE TAB -->
+<!-- AGENTS TAB -->
 <div id="tab-pipeline" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
-  <h2 class="text-headline-md text-on-surface mb-6">The Team Today</h2>
-  <div class="rounded-2xl bg-gradient-to-br from-surface-container-low to-surface-container border border-surface-container-high p-6 lg:p-8 mb-6">
-    <div class="flex items-center gap-2 mb-6">
-      <span class="inline-block w-2 h-2 rounded-full bg-secondary pulse-dot"></span>
-      <span class="text-body-default text-secondary font-medium" id="pipeline-status">Loading pipeline...</span>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-headline-md text-on-surface">AI Agent Team</h2>
+    <div class="flex items-center gap-3">
+      <span class="flex items-center gap-1.5" id="scheduler-badge">
+        <span class="inline-block w-2 h-2 rounded-full bg-outline" id="scheduler-dot"></span>
+        <span class="text-code-mono text-outline" id="scheduler-label">Offline</span>
+      </span>
+      <button class="px-4 py-2 rounded-lg text-body-default font-medium cursor-pointer transition-colors" id="scheduler-btn" onclick="toggleScheduler()">Start Agents</button>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="pipeline-stages"></div>
   </div>
+
+  <!-- Agent Cards -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="agent-cards"></div>
+
+  <!-- Live Activity Log -->
   <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
-    <h3 class="text-title-sm text-on-surface font-semibold mb-3">Run Autopilot</h3>
-    <p class="text-body-default text-on-surface-variant mb-4">One command runs the full pipeline: Scout → Analyst → Decoder → Reporter. Run this from your terminal:</p>
-    <code class="block bg-surface-container-lowest text-primary px-4 py-3 rounded-lg text-code-mono">.\engine.cmd autopilot <span class="text-outline" id="pipeline-niche-slug">real-estate-india</span> --top 10</code>
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-title-sm text-on-surface font-semibold">Live Activity</h3>
+      <span class="text-code-mono text-outline" id="log-count"></span>
+    </div>
+    <div class="max-h-64 overflow-y-auto space-y-1 font-mono text-[12px]" id="agent-log"></div>
   </div>
 </div>
 
@@ -553,38 +562,112 @@ async function loadStats() {
   $('#footer-stats').textContent = `${s.total||0} REELS · ${s.analyzed||0} DECODED`;
 }
 
-// ── Pipeline ──
-const AGENT_META = {
-  Scout: {color:'#51df9c', icon:'radar', desc:'Scrapes hashtags, harvests reels, discovers creators'},
-  Analyst: {color:'#ffb4a3', icon:'analytics', desc:'Downloads reels, transcribes, detects cuts & colors'},
-  Decoder: {color:'#ebc300', icon:'style', desc:'Generates style cards and breakdowns'},
-  Reporter: {color:'#ff5a36', icon:'summarize', desc:'Writes pipeline reports'},
-};
+// ── Agents ──
+let _agentPoll = null;
 async function loadPipeline() {
-  const data = await api(`pipeline${S.niche?'?niche='+S.niche:''}`);
-  const grid = $('#pipeline-stages');
-  const total = data.stages[0]?.count || 0;
-  $('#pipeline-status').textContent = `Pipeline: ${total} reels in ${S.niche||'all niches'}`;
-  $('#pipeline-niche-slug').textContent = S.niche || 'real-estate-india';
-  grid.innerHTML = data.stages.map(s => {
-    const m = AGENT_META[s.name] || {};
-    const pct = total ? Math.round((s.count/total)*100) : 0;
-    const barW = s.name==='Scout' ? 100 : pct;
-    return `<div class="rounded-xl bg-surface-container border border-surface-container-high p-4 fade-in">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="material-symbols-outlined text-[24px]" style="color:${m.color||'#888'}">${s.icon}</span>
-        <div>
-          <div class="text-title-sm text-on-surface font-semibold">${s.name}</div>
-          <div class="text-code-mono text-outline">${m.desc||''}</div>
+  const data = await api('agents');
+  const grid = $('#agent-cards');
+  const sched = data.scheduler;
+
+  // Scheduler status
+  const dot = $('#scheduler-dot');
+  const label = $('#scheduler-label');
+  const btn = $('#scheduler-btn');
+  if (sched.running) {
+    dot.className = 'inline-block w-2 h-2 rounded-full bg-secondary pulse-dot';
+    label.textContent = 'Running';
+    label.className = 'text-code-mono text-secondary';
+    btn.textContent = 'Stop Agents';
+    btn.className = 'px-4 py-2 rounded-lg text-body-default font-medium cursor-pointer transition-colors bg-surface-container-high text-on-surface hover:bg-error/20 hover:text-error';
+  } else {
+    dot.className = 'inline-block w-2 h-2 rounded-full bg-outline';
+    label.textContent = 'Offline';
+    label.className = 'text-code-mono text-outline';
+    btn.textContent = 'Start Agents';
+    btn.className = 'px-4 py-2 rounded-lg text-body-default font-medium cursor-pointer transition-colors bg-primary text-on-primary hover:opacity-90';
+  }
+
+  // Agent cards
+  grid.innerHTML = data.agents.map(a => {
+    const lr = a.last_run;
+    const isRunning = a.running;
+    const statusColor = isRunning ? '#51df9c' : lr?.status==='completed' ? a.color : lr?.status==='failed' ? '#ff4444' : '#666';
+    const statusText = isRunning ? 'Working...' : lr ? (lr.status==='completed' ? timeAgo(lr.finished_at) : lr.status) : 'Never run';
+    const summary = lr?.summary || 'Waiting for first run';
+
+    return `<div class="rounded-xl bg-surface-container border border-surface-container-high p-5 fade-in ${isRunning?'ring-1 ring-secondary/40':''}">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:${a.color}20">
+            <span class="material-symbols-outlined text-[22px]" style="color:${a.color}">${a.icon}</span>
+          </div>
+          <div>
+            <div class="text-title-sm text-on-surface font-semibold">${a.name}</div>
+            <div class="text-code-mono text-outline">${a.role}</div>
+          </div>
+        </div>
+        <button class="px-2.5 py-1 rounded-md text-[11px] font-medium cursor-pointer transition-colors bg-surface-container-high text-on-surface-variant hover:bg-primary/20 hover:text-primary" onclick="runAgent('${a.key}')">
+          ${isRunning ? '<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary pulse-dot mr-1"></span>Running' : 'Run Now'}
+        </button>
+      </div>
+      <div class="flex items-center gap-4 mb-3">
+        <div class="flex items-center gap-1.5">
+          <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${statusColor}"></span>
+          <span class="text-code-mono" style="color:${statusColor}">${statusText}</span>
         </div>
       </div>
-      <div class="text-stat-numeric font-bold mb-1" style="color:${m.color||'#888'}">${s.count}</div>
-      <div class="text-code-mono text-outline mb-2">${s.label}</div>
-      <div class="h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
-        <div class="h-full rounded-full transition-all" style="width:${barW}%;background:${m.color||'#888'}"></div>
+      <div class="text-body-default text-on-surface-variant mb-3 line-clamp-2">${summary}</div>
+      <div class="flex items-center gap-4 text-code-mono text-outline">
+        <span>${a.total_runs} runs</span>
+        <span>${a.total_items} items processed</span>
+        <span>every ${Math.round(a.interval/60)}m</span>
       </div>
     </div>`;
   }).join('');
+
+  // Live log
+  const logs = await api('agents/live-log?limit=30');
+  const logEl = $('#agent-log');
+  $('#log-count').textContent = `${logs.length} events`;
+  logEl.innerHTML = logs.reverse().map(l => {
+    const agentColor = data.agents.find(a=>a.key===l.agent)?.color || '#888';
+    const time = l.ts ? new Date(l.ts).toLocaleTimeString() : '';
+    return `<div class="flex gap-2 py-0.5 ${l.level==='error'?'text-error':'text-on-surface-variant'}">
+      <span class="text-outline shrink-0">${time}</span>
+      <span class="font-semibold shrink-0" style="color:${agentColor}">${l.agent}</span>
+      <span class="truncate">${l.msg}</span>
+    </div>`;
+  }).join('') || '<div class="text-outline py-4 text-center">No activity yet. Start the agents to begin.</div>';
+
+  // Auto-refresh when scheduler is running
+  if (sched.running && !_agentPoll) {
+    _agentPoll = setInterval(() => { if ($('#tab-pipeline').style.display!=='none') loadPipeline(); }, 5000);
+  } else if (!sched.running && _agentPoll) {
+    clearInterval(_agentPoll);
+    _agentPoll = null;
+  }
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s/60)}m ago`;
+  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+  return `${Math.floor(s/86400)}d ago`;
+}
+
+async function toggleScheduler() {
+  const data = await api('agents');
+  const action = data.scheduler.running ? 'stop' : 'start';
+  await fetch(`/api/agents/${action}`, {method:'POST'});
+  loadPipeline();
+}
+
+async function runAgent(key) {
+  await fetch(`/api/agents/${key}/run?niche=${S.niche||''}`, {method:'POST'});
+  setTimeout(loadPipeline, 500);
 }
 
 // ── Niche Switcher ──
