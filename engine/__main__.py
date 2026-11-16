@@ -214,6 +214,13 @@ def main(argv=None):
     sp.set_defaults(fn=lambda a: print(__import__("engine.apify_import", fromlist=["x"]).import_dataset(
         a.dataset_id, a.niche, a.source, a.token)))
 
+    sp = sub.add_parser("import-file", help="import reels from a local JSON file exported from Apify console")
+    sp.add_argument("file", help="path to the exported JSON file")
+    sp.add_argument("--niche", default=default_niche)
+    sp.add_argument("--source", default="apify")
+    sp.set_defaults(fn=lambda a: print(__import__("engine.apify_import", fromlist=["x"]).import_file(
+        a.file, a.niche, a.source)))
+
     sp = sub.add_parser("harvest", help="fill in details for collected reel links (no login)")
     sp.add_argument("file", help="lines of '<hashtag> <shortcode> ...' or one link per line")
     sp.add_argument("--niche", default=default_niche)
