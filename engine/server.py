@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import db
-from .config import CARDS, REELS, REPORTS, ROOT, SCRIPTS, list_niches, load_niche
+from .config import CARDS, DATA, REELS, REPORTS, ROOT, SCRIPTS, list_niches, load_niche
 from .score import leaderboard
 
 app = FastAPI(title="Reel Engine")
@@ -172,6 +172,181 @@ def pipeline(niche: str | None = None):
             {"name": "Decoder", "icon": "style", "count": with_card, "label": "style cards"},
             {"name": "Reporter", "icon": "summarize", "count": reports_count, "label": "reports"},
         ]
+    }
+
+
+@app.get("/api/hooks")
+def hooks(niche: str | None = None, limit: int = 100):
+    """Hook bank: all hooks extracted from analysis.json, ranked by views."""
+    out = []
+    with db.connect() as con:
+        w, a = ("WHERE niche=?", (niche,)) if niche else ("", ())
+        rows = con.execute(f"SELECT shortcode, owner, niche, COALESCE(plays,views,0) v, likes FROM reels {w}", a).fetchall()
+    for r in rows:
+        an = REELS / r["shortcode"] / "analysis.json"
+        sc_file = REELS / r["shortcode"] / "stylecard.json"
+        hook = None
+        if sc_file.exists():
+            try:
+                card = json.loads(sc_file.read_text(encoding="utf-8"))
+                if card.get("hook"):
+                    hook = card["hook"]
+            except Exception:
+                pass
+        if not hook and an.exists():
+            try:
+                analysis = json.loads(an.read_text(encoding="utf-8"))
+                ht = analysis.get("metrics", {}).get("hook_text")
+                if ht:
+                    hook = {"text": ht, "type": "unknown"}
+            except Exception:
+                pass
+        if hook and hook.get("text"):
+            out.append({
+                "shortcode": r["shortcode"],
+                "owner": r["owner"],
+                "views": r["v"],
+                "likes": r["likes"],
+                "hook_text": hook.get("text", ""),
+                "hook_type": hook.get("type", "unknown"),
+                "hook_seconds": hook.get("seconds"),
+                "visual": hook.get("visual", ""),
+            })
+    out.sort(key=lambda x: (x["views"] or 0, x["likes"] or 0), reverse=True)
+    return out[:limit]
+
+
+@app.get("/api/trends")
+def trends(niche: str | None = None, window: int = 7):
+    """Rising hashtags, audio tracks, and topics in the niche."""
+    from datetime import datetime, timedelta, timezone
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=window)).isoformat()
+    with db.connect() as con:
+        w = "WHERE posted_at >= ?"
+        a = [cutoff]
+        if niche:
+            w += " AND niche=?"
+            a.append(niche)
+        rows = con.execute(f"SELECT hashtags, audio, caption, COALESCE(plays,views,0) v FROM reels {w}", a).fetchall()
+
+    hashtag_counts: dict[str, dict] = {}
+    audio_counts: dict[str, dict] = {}
+    for r in rows:
+        v = r["v"] or 0
+        tags = json.loads(r["hashtags"] or "[]")
+        for t in tags:
+            t = t.lower().strip("#")
+            if t not in hashtag_counts:
+                hashtag_counts[t] = {"count": 0, "total_views": 0}
+            hashtag_counts[t]["count"] += 1
+            hashtag_counts[t]["total_views"] += v
+        aud = r["audio"]
+        if aud:
+            if aud not in audio_counts:
+                audio_counts[aud] = {"count": 0, "total_views": 0}
+            audio_counts[aud]["count"] += 1
+            audio_counts[aud]["total_views"] += v
+
+    top_hashtags = sorted(hashtag_counts.items(), key=lambda x: x[1]["count"], reverse=True)[:15]
+    top_audio = sorted(audio_counts.items(), key=lambda x: x[1]["count"], reverse=True)[:10]
+
+    return {
+        "hashtags": [{"tag": t, **d} for t, d in top_hashtags],
+        "audio": [{"name": a, **d} for a, d in top_audio],
+    }
+
+
+@app.get("/api/calendar")
+def calendar_list(niche: str | None = None):
+    """List calendar items."""
+    cal_file = DATA / "calendar.json"
+    if not cal_file.exists():
+        return []
+    items = json.loads(cal_file.read_text(encoding="utf-8"))
+    if niche:
+        items = [i for i in items if i.get("niche") == niche or not i.get("niche")]
+    return items
+
+
+class CalendarItem(BaseModel):
+    date: str
+    title: str
+    type: str = "idea"
+    niche: str | None = None
+    reference: str | None = None
+    notes: str | None = None
+    status: str = "planned"
+
+
+@app.post("/api/calendar")
+def calendar_add(item: CalendarItem):
+    """Add a calendar item."""
+    cal_file = DATA / "calendar.json"
+    items = json.loads(cal_file.read_text(encoding="utf-8")) if cal_file.exists() else []
+    entry = item.model_dump()
+    entry["id"] = len(items) + 1
+    items.append(entry)
+    cal_file.write_text(json.dumps(items, indent=2), encoding="utf-8")
+    return entry
+
+
+@app.post("/api/calendar/{item_id}/update")
+def calendar_update(item_id: int, item: CalendarItem):
+    """Update a calendar item."""
+    cal_file = DATA / "calendar.json"
+    items = json.loads(cal_file.read_text(encoding="utf-8")) if cal_file.exists() else []
+    for i in items:
+        if i.get("id") == item_id:
+            i.update(item.model_dump())
+            break
+    cal_file.write_text(json.dumps(items, indent=2), encoding="utf-8")
+    return {"ok": True}
+
+
+@app.delete("/api/calendar/{item_id}")
+def calendar_delete(item_id: int):
+    """Delete a calendar item."""
+    cal_file = DATA / "calendar.json"
+    items = json.loads(cal_file.read_text(encoding="utf-8")) if cal_file.exists() else []
+    items = [i for i in items if i.get("id") != item_id]
+    cal_file.write_text(json.dumps(items, indent=2), encoding="utf-8")
+    return {"ok": True}
+
+
+@app.get("/api/performance")
+def performance(niche: str | None = None):
+    """Compare own reels against reference reels."""
+    with db.connect() as con:
+        self_users = {x[0] for x in con.execute("SELECT username FROM creators WHERE is_self=1")}
+        if not self_users:
+            return {"own": [], "summary": None}
+        placeholders = ",".join("?" * len(self_users))
+        w = f"WHERE owner IN ({placeholders})"
+        a = list(self_users)
+        if niche:
+            w += " AND niche=?"
+            a.append(niche)
+        own = [dict(r) for r in con.execute(f"SELECT * FROM reels {w} ORDER BY posted_at DESC", a).fetchall()]
+
+    for r in own:
+        v = int(r["plays"] or r["views"] or 0)
+        r["views_best"] = v
+        d = REELS / r["shortcode"]
+        r["has_thumb"] = (d / "thumb.jpg").exists()
+        r["has_analysis"] = (d / "analysis.json").exists()
+        r["has_card"] = (d / "stylecard.json").exists()
+
+    total_views = sum(r["views_best"] for r in own)
+    total_likes = sum(int(r["likes"] or 0) for r in own)
+    avg_eng = round(total_likes / max(total_views, 1) * 100, 2) if total_views else None
+    return {
+        "own": own,
+        "summary": {
+            "total_reels": len(own),
+            "total_views": total_views,
+            "total_likes": total_likes,
+            "avg_engagement": avg_eng,
+        }
     }
 
 

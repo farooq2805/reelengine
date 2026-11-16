@@ -20,10 +20,13 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
 .pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
 .reel-card{transition:all .3s ease}
 .reel-card:hover{transform:scale(1.015);box-shadow:0 20px 40px -12px rgba(255,90,54,.15)}
+.reel-card:hover video{opacity:1}
+.reel-card video{opacity:0;transition:opacity .3s}
 .tab-active{background:#1f2022;color:#e3e2e4;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.3)}
 .drawer-open{transform:translateX(0)!important}
 .fade-in{animation:fadeIn .3s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.sparkline{display:inline-block;vertical-align:middle}
 </style>
 </head>
 <body class="bg-surface text-on-surface font-geist min-h-screen selection:bg-primary-container selection:text-on-primary-container">
@@ -45,9 +48,12 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
   <nav class="flex items-center gap-1 shrink-0 overflow-x-auto" id="main-nav">
     <a class="nav-tab tab-active px-3 py-1.5 rounded text-body-default cursor-pointer whitespace-nowrap" data-tab="radar">Radar</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="library">Library</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="hooks">Hook Bank</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="style-cards">Style Cards</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="scripts">Scripts</a>
-    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="my-reels">My Reels</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="edit-room">Edit Room</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="calendar">Calendar</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="my-reels">Performance</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="reports">Reports</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="pipeline">Agents</a>
   </nav>
@@ -65,34 +71,51 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
 
 <!-- RADAR TAB -->
 <div id="tab-radar" class="tab-content px-4 lg:px-gutter-desktop">
-  <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4">
-    <div class="flex items-center p-1 rounded-lg bg-surface-container-lowest shrink-0">
-      <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="1">24h</button>
-      <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="7">7 days</button>
-      <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="30">30 days</button>
-      <button class="time-btn px-3 py-1.5 rounded text-code-mono bg-surface-container text-primary font-semibold" data-window="0">All</button>
-    </div>
-    <div class="relative flex-1 max-w-2xl">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
-        <span class="material-symbols-outlined text-[18px]">search</span>
+  <div class="flex flex-col lg:flex-row gap-4">
+    <div class="flex-1 min-w-0">
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4">
+        <div class="flex items-center p-1 rounded-lg bg-surface-container-lowest shrink-0">
+          <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="1">24h</button>
+          <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="7">7 days</button>
+          <button class="time-btn px-3 py-1.5 rounded text-code-mono text-outline hover:text-on-surface" data-window="30">30 days</button>
+          <button class="time-btn px-3 py-1.5 rounded text-code-mono bg-surface-container text-primary font-semibold" data-window="0">All</button>
+        </div>
+        <div class="relative flex-1 max-w-2xl">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+            <span class="material-symbols-outlined text-[18px]">search</span>
+          </div>
+          <input class="w-full pl-10 pr-4 py-2 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline text-body-default focus:outline-none focus:bg-surface-container" id="search-input" placeholder="Search captions, transcripts, hooks..." type="text">
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <select class="appearance-none px-3 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-title-sm cursor-pointer focus:outline-none" id="sort-select">
+            <option value="outlier">Outlier Score</option>
+            <option value="velocity">Velocity</option>
+            <option value="views">Total Views</option>
+            <option value="likes">Likes</option>
+            <option value="engagement">Engagement %</option>
+            <option value="comments">Comments</option>
+            <option value="shares">Shares</option>
+            <option value="recent">Newest</option>
+          </select>
+        </div>
       </div>
-      <input class="w-full pl-10 pr-4 py-2 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline text-body-default focus:outline-none focus:bg-surface-container" id="search-input" placeholder="Search captions, transcripts, hooks..." type="text">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="reel-grid"></div>
+      <div class="text-center py-8 text-outline" id="radar-empty" style="display:none">No reels found. Run <code class="text-primary">.\engine.cmd scrape</code> to start scanning.</div>
     </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <select class="appearance-none px-3 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-title-sm cursor-pointer focus:outline-none" id="sort-select">
-        <option value="outlier">Outlier Score</option>
-        <option value="velocity">Velocity</option>
-        <option value="views">Total Views</option>
-        <option value="likes">Likes</option>
-        <option value="engagement">Engagement %</option>
-        <option value="comments">Comments</option>
-        <option value="shares">Shares</option>
-        <option value="recent">Newest</option>
-      </select>
+    <!-- RISING TRENDS SIDEBAR -->
+    <div class="w-full lg:w-64 xl:w-72 shrink-0">
+      <div class="sticky top-20 space-y-4" id="trends-sidebar">
+        <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-4">
+          <h3 class="text-label-micro uppercase tracking-wider text-outline mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-tertiary">trending_up</span> Rising Hashtags</h3>
+          <div id="trending-hashtags" class="space-y-2 text-body-default"></div>
+        </div>
+        <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-4">
+          <h3 class="text-label-micro uppercase tracking-wider text-outline mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-secondary">music_note</span> Rising Audio</h3>
+          <div id="trending-audio" class="space-y-2 text-body-default"></div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="reel-grid"></div>
-  <div class="text-center py-8 text-outline" id="radar-empty" style="display:none">No reels found. Run <code class="text-primary">.\engine.cmd scrape</code> to start scanning.</div>
 </div>
 
 <!-- LIBRARY TAB -->
@@ -100,6 +123,15 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
   <h2 class="text-headline-md text-on-surface mb-4">Saved Library</h2>
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="library-grid"></div>
   <div class="text-center py-8 text-outline" id="library-empty" style="display:none">No saved reels yet. Click the bookmark icon on any reel to save it.</div>
+</div>
+
+<!-- HOOK BANK TAB -->
+<div id="tab-hooks" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-tertiary">bolt</span> Hook Bank</h2>
+  <p class="text-body-muted text-on-surface-variant mb-4">Every hook from decoded reels, ranked by the views of the reel it opened.</p>
+  <div class="flex flex-wrap gap-2 mb-4" id="hook-type-filters"></div>
+  <div class="space-y-3" id="hooks-list"></div>
+  <div class="text-center py-8 text-outline" id="hooks-empty" style="display:none">No hooks decoded yet. Analyze reels to populate the Hook Bank.</div>
 </div>
 
 <!-- STYLE CARDS TAB -->
@@ -111,16 +143,98 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
 
 <!-- SCRIPTS TAB -->
 <div id="tab-scripts" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
-  <h2 class="text-headline-md text-on-surface mb-4">Scripts Studio</h2>
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-headline-md text-on-surface">Script Studio</h2>
+    <div class="flex items-center gap-2">
+      <span class="text-body-muted text-outline">Write scripts with: <code class="text-primary">engine.cmd</code> + Claude Code skill</span>
+    </div>
+  </div>
   <div class="flex flex-col gap-4" id="scripts-list"></div>
-  <div class="text-center py-8 text-outline" id="scripts-empty" style="display:none">No scripts yet.</div>
+  <div class="text-center py-8 text-outline" id="scripts-empty" style="display:none">No scripts yet. Use the Script Studio skill in Claude Code to generate scripts.</div>
 </div>
 
-<!-- MY REELS TAB -->
+<!-- EDIT ROOM TAB -->
+<div id="tab-edit-room" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <h2 class="text-headline-md text-on-surface mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary-container">movie_edit</span> Edit Room</h2>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-4">
+      <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
+        <h3 class="text-title-sm text-on-surface font-semibold mb-3">1. Choose a Style Card</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="edit-cards-pick"></div>
+      </div>
+      <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
+        <h3 class="text-title-sm text-on-surface font-semibold mb-3">2. Your Raw Clips</h3>
+        <p class="text-body-muted text-on-surface-variant mb-3">Place raw video clips in a folder, then use the CLI to process:</p>
+        <div class="bg-surface-container rounded-lg p-4 font-mono text-code-mono text-on-surface-variant">
+          <p>.\engine.cmd edit my-reel --clips clip1.mp4 clip2.mp4 --card &lt;shortcode&gt;</p>
+          <p class="mt-2 text-outline"># This removes pauses, applies the style card, and prepares for render</p>
+        </div>
+      </div>
+      <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
+        <h3 class="text-title-sm text-on-surface font-semibold mb-3">3. Render</h3>
+        <div class="bg-surface-container rounded-lg p-4 font-mono text-code-mono text-on-surface-variant">
+          <p>.\engine.cmd render my-reel</p>
+          <p class="mt-2 text-outline"># Renders 9:16 MP4 using Remotion with the chosen style</p>
+        </div>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
+        <h3 class="text-title-sm text-on-surface font-semibold mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-secondary">checklist</span> Edit Workflow</h3>
+        <div class="space-y-3 text-body-default text-on-surface-variant">
+          <div class="flex gap-3"><span class="text-primary-container font-bold">1</span><span>Pick a Style Card from a decoded reel</span></div>
+          <div class="flex gap-3"><span class="text-primary-container font-bold">2</span><span>Film your raw clips following the shot list</span></div>
+          <div class="flex gap-3"><span class="text-primary-container font-bold">3</span><span>Run <code class="text-primary">engine.cmd edit</code> to auto-cut</span></div>
+          <div class="flex gap-3"><span class="text-primary-container font-bold">4</span><span>Preview and adjust in Remotion</span></div>
+          <div class="flex gap-3"><span class="text-primary-container font-bold">5</span><span>Run <code class="text-primary">engine.cmd render</code> for final MP4</span></div>
+        </div>
+      </div>
+      <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
+        <h3 class="text-title-sm text-on-surface font-semibold mb-3">A/B Testing</h3>
+        <p class="text-body-muted text-on-surface-variant">Create two versions with different hooks using the same clips and style card. Use Instagram's Trial Reels to test which hook performs better.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR TAB -->
+<div id="tab-calendar" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-headline-md text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-tertiary">calendar_month</span> Content Calendar</h2>
+    <button onclick="showAddCalendar()" class="px-4 py-2 rounded-lg bg-primary text-on-primary text-body-default font-medium cursor-pointer hover:opacity-90">+ Add Item</button>
+  </div>
+  <div class="grid grid-cols-7 gap-px bg-surface-container-high rounded-xl overflow-hidden mb-6" id="calendar-grid"></div>
+  <div class="space-y-3" id="calendar-list"></div>
+  <div id="calendar-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center" style="display:none">
+    <div class="bg-surface-container-low rounded-xl border border-surface-container-high p-6 w-full max-w-md">
+      <h3 class="text-headline-md text-on-surface mb-4">Add Calendar Item</h3>
+      <div class="space-y-3">
+        <input id="cal-date" type="date" class="w-full px-3 py-2 rounded-lg bg-surface-container text-on-surface text-body-default focus:outline-none">
+        <input id="cal-title" type="text" placeholder="Title (e.g., 2BHK cost reveal)" class="w-full px-3 py-2 rounded-lg bg-surface-container text-on-surface text-body-default focus:outline-none placeholder:text-outline">
+        <select id="cal-type" class="w-full px-3 py-2 rounded-lg bg-surface-container text-on-surface text-body-default focus:outline-none">
+          <option value="idea">Idea</option>
+          <option value="script">Script</option>
+          <option value="shoot">Shoot</option>
+          <option value="edit">Edit</option>
+          <option value="post">Post</option>
+        </select>
+        <textarea id="cal-notes" placeholder="Notes..." rows="3" class="w-full px-3 py-2 rounded-lg bg-surface-container text-on-surface text-body-default focus:outline-none placeholder:text-outline resize-none"></textarea>
+        <div class="flex gap-2 justify-end">
+          <button onclick="$('#calendar-modal').style.display='none'" class="px-4 py-2 rounded-lg bg-surface-container text-on-surface-variant text-body-default cursor-pointer hover:bg-surface-container-high">Cancel</button>
+          <button onclick="addCalendarItem()" class="px-4 py-2 rounded-lg bg-primary text-on-primary text-body-default font-medium cursor-pointer hover:opacity-90">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PERFORMANCE TAB (was My Reels) -->
 <div id="tab-my-reels" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
-  <h2 class="text-headline-md text-on-surface mb-4">My Reels</h2>
+  <h2 class="text-headline-md text-on-surface mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-secondary">insights</span> Performance</h2>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="perf-summary"></div>
+  <h3 class="text-title-sm text-on-surface font-semibold mb-3">Your Reels</h3>
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="my-reels-grid"></div>
-  <div class="text-center py-8 text-outline" id="my-reels-empty" style="display:none">No self-reels tracked yet.</div>
+  <div class="text-center py-8 text-outline" id="my-reels-empty" style="display:none">No self-reels tracked yet. Add your username to the niche recipe with <code class="text-primary">is_self: true</code>.</div>
 </div>
 
 <!-- REPORTS TAB -->
@@ -142,11 +256,7 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
       <button class="px-4 py-2 rounded-lg text-body-default font-medium cursor-pointer transition-colors" id="scheduler-btn" onclick="toggleScheduler()">Start Agents</button>
     </div>
   </div>
-
-  <!-- Agent Cards -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="agent-cards"></div>
-
-  <!-- Live Activity Log -->
   <div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-title-sm text-on-surface font-semibold">Live Activity</h3>
@@ -191,13 +301,13 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
   <div class="flex items-center gap-3">
     <span class="text-code-mono text-outline">PREVIEW: 1080x1920 (9:16)</span>
     <div class="h-3 w-px bg-surface-container-high"></div>
-    <span class="text-code-mono text-outline">STUDIO V1.0</span>
+    <span class="text-code-mono text-outline">STUDIO V2.0</span>
   </div>
 </footer>
 
 <script>
 // ── State ──
-let S = { window: 0, sort: 'outlier', q: '', tab: 'radar', niche: null, drawerSc: null, drawerData: null };
+let S = { window: 0, sort: 'outlier', q: '', tab: 'radar', niche: null, drawerSc: null, drawerData: null, hookFilter: 'all' };
 
 // ── Helpers ──
 const $ = s => document.querySelector(s);
@@ -208,17 +318,29 @@ const color = hex => { if(!hex||typeof hex!=='string') return '#888'; return hex
 async function api(path) { const r = await fetch('/api/'+path); return r.json(); }
 function esc(s) { const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
 
+function sparklineSvg(points, w=80, h=24) {
+  if(!points||points.length<2) return '';
+  const vals = points.map(p => p.v || 0);
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const range = mx - mn || 1;
+  const coords = vals.map((v, i) => `${(i/(vals.length-1))*w},${h - ((v-mn)/range)*h}`);
+  return `<svg class="sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="#51df9c" stroke-width="1.5" points="${coords.join(' ')}"/></svg>`;
+}
+
 // ── Tab Navigation ──
 $$('.nav-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 function switchTab(tab) {
   S.tab = tab;
   $$('.nav-tab').forEach(t => { t.classList.toggle('tab-active', t.dataset.tab===tab); t.classList.toggle('text-on-surface-variant', t.dataset.tab!==tab); });
   $$('.tab-content').forEach(c => c.style.display = c.id === 'tab-'+tab ? '' : 'none');
-  if(tab==='radar') loadRadar();
+  if(tab==='radar') { loadRadar(); loadTrends(); }
   else if(tab==='library') loadLibrary();
+  else if(tab==='hooks') loadHooks();
   else if(tab==='style-cards') loadCards();
   else if(tab==='scripts') loadScripts();
-  else if(tab==='my-reels') loadMyReels();
+  else if(tab==='edit-room') loadEditRoom();
+  else if(tab==='calendar') loadCalendar();
+  else if(tab==='my-reels') loadPerformance();
   else if(tab==='reports') loadReports();
   else if(tab==='pipeline') loadPipeline();
 }
@@ -236,15 +358,17 @@ $('#search-input').addEventListener('input', e => { clearTimeout(searchTimer); s
 // ── Reel Card HTML ──
 function reelCard(r) {
   const thumb = r.has_thumb ? `/media/${r.shortcode}/thumb.jpg` : '';
+  const hasVideo = r.has_video;
   const outlier = r.outlier ? `<span class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-primary-container text-white text-label-micro font-bold uppercase tracking-wider">${r.outlier}x ${r.outlier_basis==='likes'?'LIKES':'OUTLIER'}</span>` : '';
   const decoded = r.has_analysis ? `<span class="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded-full text-label-micro font-bold" style="background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.3);color:#3ECF8E">DECODED</span>` : '';
   const saved = r.saved ? `<span class="absolute top-8 right-2 z-10"><span class="material-symbols-outlined text-[18px] text-tertiary">bookmark</span></span>` : '';
   const card = r.has_card ? `<span class="absolute top-8 left-2 z-10 px-1.5 py-0.5 rounded-full text-label-micro" style="background:rgba(235,195,0,.12);border:1px solid rgba(235,195,0,.3);color:#ebc300">STYLE CARD</span>` : '';
   const bg = thumb ? `background-image:url('${thumb}');background-size:cover;background-position:center;` : 'background:#1b1c1e;';
-  return `<div class="reel-card group relative aspect-[9/16] rounded-xl overflow-hidden bg-surface-container-low cursor-pointer flex flex-col justify-between" style="${bg}" onclick="openDrawer('${r.shortcode}')">
-    ${outlier}${decoded}${saved}${card}
-    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-    <div class="relative z-10 mt-auto p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+  const videoEl = hasVideo ? `<video class="absolute inset-0 w-full h-full object-cover z-[5]" src="/media/${r.shortcode}/video.mp4" muted loop playsinline preload="none"></video>` : '';
+  return `<div class="reel-card group relative aspect-[9/16] rounded-xl overflow-hidden bg-surface-container-low cursor-pointer flex flex-col justify-between" style="${bg}" onclick="openDrawer('${r.shortcode}')" onmouseenter="this.querySelector('video')?.play()" onmouseleave="var v=this.querySelector('video');if(v){v.pause();v.currentTime=0;}">
+    ${videoEl}${outlier}${decoded}${saved}${card}
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-[6]"></div>
+    <div class="relative z-[7] mt-auto p-3 opacity-0 group-hover:opacity-100 transition-opacity">
       <p class="text-body-default text-white/90 font-medium truncate">@${esc(r.owner||'unknown')}</p>
       <div class="flex items-center gap-2 mt-1 text-code-mono text-white/70">
         <span>${fmt(r.views_best||r.likes)} ${r.views_best&&r.views_best>0?'views':'likes'}</span>
@@ -266,6 +390,21 @@ async function loadRadar() {
   grid.innerHTML = reels.map(reelCard).join('');
 }
 
+// ── Trends Sidebar ──
+async function loadTrends() {
+  try {
+    const data = await api(`trends?window=${S.window||7}${S.niche?'&niche='+S.niche:''}`);
+    const htEl = $('#trending-hashtags');
+    const auEl = $('#trending-audio');
+    if(data.hashtags?.length) {
+      htEl.innerHTML = data.hashtags.map(h => `<div class="flex items-center justify-between"><span class="text-on-surface-variant">#${esc(h.tag)}</span><span class="text-code-mono text-outline">${h.count} reels</span></div>`).join('');
+    } else { htEl.innerHTML = '<p class="text-outline text-code-mono">No data yet</p>'; }
+    if(data.audio?.length) {
+      auEl.innerHTML = data.audio.map(a => `<div class="flex items-center justify-between gap-2"><span class="text-on-surface-variant truncate text-[12px]">${esc(a.name)}</span><span class="text-code-mono text-outline shrink-0">${a.count}</span></div>`).join('');
+    } else { auEl.innerHTML = '<p class="text-outline text-code-mono">No audio data</p>'; }
+  } catch(e) { console.log('Trends not available:', e); }
+}
+
 // ── Library ──
 async function loadLibrary() {
   const reels = await api(`reels?saved=1&window=0&sort=outlier&limit=100${S.niche?'&niche='+S.niche:''}`);
@@ -275,6 +414,37 @@ async function loadLibrary() {
   grid.innerHTML = reels.map(reelCard).join('');
 }
 
+// ── Hook Bank ──
+async function loadHooks() {
+  const hooks = await api(`hooks?limit=200${S.niche?'&niche='+S.niche:''}`);
+  const list = $('#hooks-list');
+  const filtersEl = $('#hook-type-filters');
+  if(!hooks.length) { list.innerHTML=''; filtersEl.innerHTML=''; $('#hooks-empty').style.display=''; return; }
+  $('#hooks-empty').style.display='none';
+  const types = [...new Set(hooks.map(h=>h.hook_type))].filter(Boolean);
+  filtersEl.innerHTML = `<button class="px-3 py-1 rounded-full text-code-mono cursor-pointer ${S.hookFilter==='all'?'bg-primary text-on-primary':'bg-surface-container text-outline hover:text-on-surface'}" onclick="S.hookFilter='all';loadHooks()">All</button>` +
+    types.map(t => `<button class="px-3 py-1 rounded-full text-code-mono cursor-pointer ${S.hookFilter===t?'bg-primary text-on-primary':'bg-surface-container text-outline hover:text-on-surface'}" onclick="S.hookFilter='${t}';loadHooks()">${esc(t)}</button>`).join('');
+  const filtered = S.hookFilter==='all' ? hooks : hooks.filter(h=>h.hook_type===S.hookFilter);
+  list.innerHTML = filtered.map((h, i) => `<div class="rounded-xl bg-surface-container-low border border-surface-container-high p-4 hover:border-outline-variant transition-colors fade-in cursor-pointer" onclick="openDrawer('${h.shortcode}')">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-label-micro text-primary-container font-bold">#${i+1}</span>
+          <span class="px-2 py-0.5 rounded-full text-label-micro bg-tertiary/10 text-tertiary border border-tertiary/30">${esc(h.hook_type)}</span>
+          ${h.hook_seconds?`<span class="text-code-mono text-outline">${h.hook_seconds}s</span>`:''}
+        </div>
+        <p class="text-body-default text-on-surface font-medium" style="font-size:14px">"${esc(h.hook_text)}"</p>
+        ${h.visual?`<p class="text-body-muted text-outline mt-1">Visual: ${esc(h.visual)}</p>`:''}
+      </div>
+      <div class="text-right shrink-0">
+        <div class="text-stat-numeric text-on-surface">${fmt(h.views||h.likes)}</div>
+        <div class="text-code-mono text-outline">${h.views?'views':'likes'}</div>
+        <div class="text-code-mono text-outline mt-1">@${esc(h.owner||'?')}</div>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
 // ── Style Cards ──
 async function loadCards() {
   const cards = await api(`cards${S.niche?'?niche='+S.niche:''}`);
@@ -282,19 +452,22 @@ async function loadCards() {
   if(!cards.length) { grid.innerHTML=''; $('#cards-empty').style.display=''; return; }
   $('#cards-empty').style.display='none';
   grid.innerHTML = cards.map(c => {
-    const pal = (c.colour?.palette||[]).map(h=>`<span class="w-5 h-5 rounded-full border border-surface-container-high inline-block" style="background:${color(h)}"></span>`).join('');
+    const pal = (c.colour?.palette||[]).map(h=>`<span class="w-6 h-6 rounded-full border border-surface-container-high inline-block" style="background:${color(h)}" title="${h}"></span>`).join('');
     const src = c._kind==='house' ? (c.source||[]).join(', ') : c.source;
+    const cutRate = c.pacing?.cuts_per_10s;
+    const cutMeter = cutRate != null ? `<div class="mt-2"><div class="flex items-center gap-2"><span class="text-label-micro text-outline uppercase">Cut Rate</span><div class="flex-1 h-1.5 rounded-full bg-surface-container overflow-hidden"><div class="h-full rounded-full bg-primary-container" style="width:${Math.min(cutRate/5*100,100)}%"></div></div><span class="text-code-mono text-outline">${cutRate}/10s</span></div></div>` : '';
     return `<div class="rounded-xl bg-surface-container-low border border-surface-container-high p-4 hover:border-outline-variant transition-colors fade-in cursor-pointer" onclick="${c._shortcode?`openDrawer('${c._shortcode}')`:''}">
       <div class="flex items-center justify-between mb-2">
         <h3 class="text-title-sm text-on-surface font-semibold">${esc(c.name||'Untitled')}</h3>
         <span class="text-badge-pill px-2 py-0.5 rounded-full ${c._kind==='house'?'bg-tertiary/10 text-tertiary border border-tertiary/30':'bg-primary/10 text-primary border border-primary/30'}">${c._kind==='house'?'HOUSE':'REEL'}</span>
       </div>
       <p class="text-body-muted text-on-surface-variant mb-3 line-clamp-2">${esc(c.summary||'')}</p>
-      <div class="flex items-center gap-1 mb-2">${pal}</div>
-      <div class="flex flex-wrap gap-2 text-code-mono text-outline">
-        ${c.hook?.type?`<span class="px-2 py-0.5 rounded bg-surface-container">${esc(c.hook.type)}</span>`:''}
-        ${c.pacing?.cuts_per_10s!=null?`<span class="px-2 py-0.5 rounded bg-surface-container">${c.pacing.cuts_per_10s} cuts/10s</span>`:''}
-        ${c.captions?.style?`<span class="px-2 py-0.5 rounded bg-surface-container">${esc(c.captions.style)} captions</span>`:''}
+      <div class="flex items-center gap-1.5 mb-2">${pal}</div>
+      ${cutMeter}
+      <div class="flex flex-wrap gap-2 mt-3 text-code-mono text-outline">
+        ${c.hook?.type?`<span class="px-2 py-0.5 rounded bg-surface-container"><span class="material-symbols-outlined text-[12px] align-middle text-tertiary">bolt</span> ${esc(c.hook.type)}</span>`:''}
+        ${c.captions?.style?`<span class="px-2 py-0.5 rounded bg-surface-container"><span class="material-symbols-outlined text-[12px] align-middle">closed_caption</span> ${esc(c.captions.style)}</span>`:''}
+        ${c.audio?.music?`<span class="px-2 py-0.5 rounded bg-surface-container"><span class="material-symbols-outlined text-[12px] align-middle text-secondary">music_note</span> ${esc(typeof c.audio==='string'?c.audio:c.audio.music).slice(0,20)}</span>`:''}
       </div>
       <div class="mt-3 text-code-mono text-outline">src: ${esc(src||'?')}</div>
     </div>`;
@@ -308,18 +481,139 @@ async function loadScripts() {
   if(!scripts.length) { list.innerHTML=''; $('#scripts-empty').style.display=''; return; }
   $('#scripts-empty').style.display='none';
   list.innerHTML = scripts.map(s => `<div class="rounded-xl bg-surface-container-low border border-surface-container-high p-5 fade-in">
-    <h3 class="text-title-sm text-on-surface font-semibold mb-2">${esc(s.title)}</h3>
-    <pre class="text-body-default text-on-surface-variant whitespace-pre-wrap max-h-64 overflow-y-auto">${esc(s.text)}</pre>
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-title-sm text-on-surface font-semibold">${esc(s.title)}</h3>
+      <span class="text-code-mono text-outline">${s.file}</span>
+    </div>
+    <pre class="text-body-default text-on-surface-variant whitespace-pre-wrap max-h-64 overflow-y-auto leading-relaxed">${esc(s.text)}</pre>
   </div>`).join('');
 }
 
-// ── My Reels ──
-async function loadMyReels() {
-  const reels = await api(`reels?mine=1&window=0&sort=recent&limit=60${S.niche?'&niche='+S.niche:''}`);
-  const grid = $('#my-reels-grid');
-  if(!reels.length) { grid.innerHTML=''; $('#my-reels-empty').style.display=''; return; }
-  $('#my-reels-empty').style.display='none';
-  grid.innerHTML = reels.map(reelCard).join('');
+// ── Edit Room ──
+async function loadEditRoom() {
+  const cards = await api(`cards${S.niche?'?niche='+S.niche:''}`);
+  const pick = $('#edit-cards-pick');
+  if(!cards.length) { pick.innerHTML='<p class="text-outline text-body-muted col-span-3">No style cards yet. Decode reels first.</p>'; return; }
+  pick.innerHTML = cards.slice(0,9).map(c => {
+    const pal = (c.colour?.palette||[]).slice(0,3).map(h=>`<span class="w-3 h-3 rounded-full inline-block" style="background:${color(h)}"></span>`).join('');
+    const sc = c._shortcode||'';
+    return `<div class="p-3 rounded-lg bg-surface-container border border-surface-container-high hover:border-primary cursor-pointer transition-colors" onclick="${sc?`openDrawer('${sc}')`:''}">
+      <div class="text-body-default text-on-surface font-medium truncate">${esc(c.name||'Untitled')}</div>
+      <div class="flex gap-1 mt-1">${pal}</div>
+      ${c.hook?.type?`<div class="text-code-mono text-outline mt-1">${esc(c.hook.type)}</div>`:''}
+      <div class="text-code-mono text-primary mt-1">${sc||c._file||''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Calendar ──
+async function loadCalendar() {
+  const items = await api(`calendar${S.niche?'?niche='+S.niche:''}`);
+  const grid = $('#calendar-grid');
+  const list = $('#calendar-list');
+
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = '';
+  for(let i = 0; i < 7; i++) {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+    const ds = d.toISOString().slice(0,10);
+    const isToday = ds === today.toISOString().slice(0,10);
+    const dayItems = items.filter(it => it.date === ds);
+    html += `<div class="bg-surface-container-low p-3 min-h-[120px] ${isToday?'ring-1 ring-primary/40':''}">
+      <div class="text-label-micro ${isToday?'text-primary':'text-outline'} uppercase mb-2">${days[i]} ${d.getDate()}</div>
+      ${dayItems.map(it => {
+        const typeColors = {idea:'bg-tertiary/20 text-tertiary',script:'bg-primary/20 text-primary',shoot:'bg-secondary/20 text-secondary',edit:'bg-on-surface-variant/20 text-on-surface-variant',post:'bg-primary-container/20 text-primary-container'};
+        return `<div class="px-2 py-1 rounded text-[11px] mb-1 ${typeColors[it.type]||'bg-surface-container text-outline'}">${esc(it.title||'Untitled')}</div>`;
+      }).join('')}
+    </div>`;
+  }
+  grid.innerHTML = html;
+
+  if(!items.length) { list.innerHTML='<p class="text-outline text-center py-4">No calendar items yet. Click "+ Add Item" to plan your content.</p>'; return; }
+  list.innerHTML = items.sort((a,b)=>a.date>b.date?1:-1).map(it => {
+    const typeColors = {idea:'text-tertiary',script:'text-primary',shoot:'text-secondary',edit:'text-on-surface-variant',post:'text-primary-container'};
+    const typeIcons = {idea:'lightbulb',script:'description',shoot:'videocam',edit:'movie_edit',post:'publish'};
+    return `<div class="rounded-xl bg-surface-container-low border border-surface-container-high p-4 flex items-center gap-4 fade-in">
+      <div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined ${typeColors[it.type]||'text-outline'}">${typeIcons[it.type]||'event'}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-title-sm text-on-surface font-semibold">${esc(it.title||'Untitled')}</div>
+        <div class="text-code-mono text-outline">${it.date} · ${it.type}${it.notes?' · '+esc(it.notes).slice(0,60):''}</div>
+      </div>
+      <button onclick="deleteCalendarItem(${it.id})" class="text-outline hover:text-error"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+    </div>`;
+  }).join('');
+}
+
+function showAddCalendar() {
+  const today = new Date().toISOString().slice(0,10);
+  $('#cal-date').value = today;
+  $('#cal-title').value = '';
+  $('#cal-notes').value = '';
+  $('#calendar-modal').style.display = '';
+}
+
+async function addCalendarItem() {
+  const body = { date: $('#cal-date').value, title: $('#cal-title').value, type: $('#cal-type').value, notes: $('#cal-notes').value, niche: S.niche };
+  await fetch('/api/calendar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  $('#calendar-modal').style.display = 'none';
+  loadCalendar();
+}
+
+async function deleteCalendarItem(id) {
+  await fetch(`/api/calendar/${id}`, { method:'DELETE' });
+  loadCalendar();
+}
+
+// ── Performance ──
+async function loadPerformance() {
+  try {
+    const data = await api(`performance${S.niche?'?niche='+S.niche:''}`);
+    const sumEl = $('#perf-summary');
+    const grid = $('#my-reels-grid');
+
+    if(data.summary) {
+      sumEl.innerHTML = `
+        <div class="p-4 rounded-xl bg-surface-container-low border border-surface-container-high">
+          <div class="text-label-micro uppercase text-outline tracking-wider mb-1">Total Reels</div>
+          <div class="text-display-lg text-on-surface">${data.summary.total_reels}</div>
+        </div>
+        <div class="p-4 rounded-xl bg-surface-container-low border border-surface-container-high">
+          <div class="text-label-micro uppercase text-outline tracking-wider mb-1">Total Views</div>
+          <div class="text-display-lg text-secondary">${fmt(data.summary.total_views)}</div>
+        </div>
+        <div class="p-4 rounded-xl bg-surface-container-low border border-surface-container-high">
+          <div class="text-label-micro uppercase text-outline tracking-wider mb-1">Total Likes</div>
+          <div class="text-display-lg text-primary">${fmt(data.summary.total_likes)}</div>
+        </div>
+        <div class="p-4 rounded-xl bg-surface-container-low border border-surface-container-high">
+          <div class="text-label-micro uppercase text-outline tracking-wider mb-1">Avg Engagement</div>
+          <div class="text-display-lg text-tertiary">${data.summary.avg_engagement!=null?data.summary.avg_engagement+'%':'-'}</div>
+        </div>`;
+    } else { sumEl.innerHTML = ''; }
+
+    if(!data.own?.length) { grid.innerHTML=''; $('#my-reels-empty').style.display=''; return; }
+    $('#my-reels-empty').style.display='none';
+    grid.innerHTML = data.own.map(r => {
+      r.views_best = r.views_best || 0;
+      r.owner = r.owner || '';
+      r.has_thumb = r.has_thumb || false;
+      r.has_analysis = r.has_analysis || false;
+      r.has_card = r.has_card || false;
+      return reelCard(r);
+    }).join('');
+  } catch(e) {
+    const reels = await api(`reels?mine=1&window=0&sort=recent&limit=60${S.niche?'&niche='+S.niche:''}`);
+    const grid = $('#my-reels-grid');
+    if(!reels.length) { grid.innerHTML=''; $('#my-reels-empty').style.display=''; return; }
+    $('#my-reels-empty').style.display='none';
+    grid.innerHTML = reels.map(reelCard).join('');
+  }
 }
 
 // ── Reports ──
@@ -379,7 +673,8 @@ async function openDrawer(sc) {
   const v = d.plays||d.views||0;
   const hasViews = v > 0;
   const m2 = d.analysis?.metrics||{};
-  const likesComments = (d.likes||0)+(d.comments||0);
+
+  // Stats grid
   html += `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
     <div class="p-3 rounded-lg bg-surface-container border border-surface-container-high">
       <div class="text-label-micro uppercase text-outline tracking-wider mb-1">Outlier</div>
@@ -400,6 +695,21 @@ async function openDrawer(sc) {
     </div>
   </div>`;
 
+  // Views over time sparkline
+  if(d.snapshots?.length > 1) {
+    html += `<div class="mb-5 p-3 rounded-lg bg-surface-container border border-surface-container-high">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-label-micro uppercase text-outline tracking-wider">Views Over Time</span>
+        <span class="text-code-mono text-outline">${d.snapshots.length} snapshots</span>
+      </div>
+      ${sparklineSvg(d.snapshots.map(s=>({v:s.views||0})), 500, 40)}
+      <div class="flex justify-between text-code-mono text-outline mt-1">
+        <span>${d.snapshots[0]?.ts?.slice(0,10)||''}</span>
+        <span>${d.snapshots[d.snapshots.length-1]?.ts?.slice(0,10)||''}</span>
+      </div>
+    </div>`;
+  }
+
   html += `<div class="flex flex-wrap gap-3 mb-5 text-code-mono">
     <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${fmt(d.likes)} likes</span>
     <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${fmt(d.comments)} comments</span>
@@ -408,19 +718,21 @@ async function openDrawer(sc) {
     <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${ago(d.posted_at)} ago</span>
   </div>`;
 
-  html += `<div class="mb-5"><img src="/media/${sc}/thumb.jpg" alt="thumb" class="w-full max-w-xs rounded-lg border border-surface-container-high" onerror="this.style.display='none'"></div>`;
+  // Video player or thumbnail
+  const hasVideo = (REELS_BASE||'') ? false : true;
+  html += `<div class="mb-5">
+    <video src="/media/${sc}/video.mp4" controls class="w-full max-w-xs rounded-lg border border-surface-container-high" style="aspect-ratio:9/16" onerror="this.outerHTML='<img src=/media/${sc}/thumb.jpg class=\\'w-full max-w-xs rounded-lg border border-surface-container-high\\' onerror=\\'this.style.display=none\\'>'"></video>
+  </div>`;
 
-  // === INSIGHTS FIRST (from style card) ===
+  // Style card insights
   if(d.stylecard) {
     const sc_data = d.stylecard;
-    // WHY THIS WORKED — lead insight, most important
     if(sc_data.why_it_worked?.length) {
       html += `<div class="mb-5 p-4 rounded-xl border border-secondary/30 bg-secondary/5">
         <h4 class="text-title-sm text-secondary font-semibold mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">lightbulb</span> Why This Worked</h4>
         <ul class="space-y-2">${sc_data.why_it_worked.map(w=>`<li class="text-body-default text-on-surface-variant flex gap-2"><span class="text-secondary shrink-0 mt-0.5">→</span><span>${esc(w)}</span></li>`).join('')}</ul>
       </div>`;
     }
-    // HOOK ANALYSIS
     if(sc_data.hook) {
       html += `<div class="mb-5 p-4 rounded-xl border border-tertiary/30 bg-tertiary/5">
         <h4 class="text-title-sm text-tertiary font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">bolt</span> Hook (${esc(sc_data.hook.type||'?')} · ${sc_data.hook.seconds||'?'}s)</h4>
@@ -429,14 +741,12 @@ async function openDrawer(sc) {
         ${sc_data.hook.title_overlay?`<p class="text-body-muted text-outline mt-1"><strong>Title overlay:</strong> ${esc(sc_data.hook.title_overlay)}</p>`:''}
       </div>`;
     }
-    // STRUCTURE TIMELINE
     if(sc_data.structure?.length) {
       html += `<div class="mb-5 p-4 rounded-xl bg-surface-container border border-surface-container-high">
         <h4 class="text-title-sm text-on-surface font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary-container">timeline</span> Video Structure</h4>
         <div class="space-y-1">${sc_data.structure.map(s=>`<div class="flex gap-2 text-body-default"><span class="text-code-mono text-outline shrink-0 w-20">${s.start?.toFixed(0)}–${s.end?.toFixed(0)}s</span><span class="text-label-micro text-primary-container uppercase w-16 shrink-0">${esc(s.part)}</span><span class="text-on-surface-variant">${esc(s.what)}</span></div>`).join('')}</div>
       </div>`;
     }
-    // DO & DON'T — the practical playbook
     if(sc_data.do?.length || sc_data.dont?.length) {
       html += `<div class="mb-5 grid grid-cols-1 md:grid-cols-2 gap-3">`;
       if(sc_data.do?.length) {
@@ -453,7 +763,6 @@ async function openDrawer(sc) {
       }
       html += `</div>`;
     }
-    // STYLE CARD production details
     html += `<div class="mb-5 p-4 rounded-xl border border-tertiary/30 bg-tertiary/5">
       <h4 class="text-title-sm text-tertiary font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">style</span> Production Style: ${esc(sc_data.name||'')}</h4>
       <p class="text-body-default text-on-surface-variant mb-2">${esc(sc_data.summary||'')}</p>
@@ -464,7 +773,6 @@ async function openDrawer(sc) {
     </div>`;
   }
 
-  // === BREAKDOWN (how to remake) ===
   if(d.breakdown) {
     html += `<div class="mb-5 p-4 rounded-xl border border-primary-container/30 bg-primary-container/5">
       <h4 class="text-title-sm text-primary-container font-semibold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">menu_book</span> How To Remake This</h4>
@@ -472,11 +780,9 @@ async function openDrawer(sc) {
     </div>`;
   }
 
-  // === TECHNICAL DATA (collapsible) ===
   if(d.analysis) {
     const m = d.analysis.metrics;
     html += `<details class="mb-5"><summary class="cursor-pointer text-title-sm text-outline font-semibold mb-3 flex items-center gap-2 hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">expand_more</span> Technical Details</summary>`;
-
     html += `<div class="mt-3 mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
       <h4 class="text-label-micro uppercase text-outline tracking-wider mb-3">Pacing &amp; Cuts</h4>
       <div class="grid grid-cols-3 gap-3 text-center">
@@ -490,23 +796,19 @@ async function openDrawer(sc) {
         <div><div class="text-stat-numeric text-on-surface">${m.first_cut_at?.toFixed(1)}s</div><div class="text-label-micro text-outline uppercase">1st cut</div></div>
       </div>
     </div>`;
-
     if(d.analysis.transcript?.text) {
       const hookWords = (m.hook_text||'').split(/\s+/).filter(Boolean);
       let txt = esc(d.analysis.transcript.text);
       if(hookWords.length && m.hook_text) {
         const hookEsc = esc(m.hook_text);
         const idx = txt.toLowerCase().indexOf(hookEsc.toLowerCase());
-        if(idx>=0) {
-          txt = txt.slice(0,idx) + `<span class="px-1 py-0.5 rounded" style="background:rgba(255,212,0,.15);color:#FFD400">${txt.slice(idx,idx+hookEsc.length)}</span>` + txt.slice(idx+hookEsc.length);
-        }
+        if(idx>=0) txt = txt.slice(0,idx) + `<span class="px-1 py-0.5 rounded" style="background:rgba(255,212,0,.15);color:#FFD400">${txt.slice(idx,idx+hookEsc.length)}</span>` + txt.slice(idx+hookEsc.length);
       }
       html += `<div class="mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
         <h4 class="text-label-micro uppercase text-outline tracking-wider mb-2">Transcript</h4>
         <p class="text-body-default text-on-surface-variant leading-relaxed max-h-48 overflow-y-auto">${txt}</p>
       </div>`;
     }
-
     if(d.analysis.colour) {
       const pal = (d.analysis.colour.palette||[]).map(p=>`<span class="w-8 h-8 rounded-lg border border-surface-container-high inline-block" style="background:${color(p.hex||p)}" title="${esc(p.hex||p)}"></span>`).join(' ');
       html += `<div class="mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
@@ -515,7 +817,6 @@ async function openDrawer(sc) {
         <p class="text-body-muted text-outline">Grade: ${esc(d.analysis.colour.grade||'-')}</p>
       </div>`;
     }
-
     const frames = d.analysis.frames||[];
     if(frames.length) {
       html += `<div class="mb-4 p-4 rounded-xl bg-surface-container border border-surface-container-high">
@@ -568,33 +869,26 @@ async function loadPipeline() {
   const data = await api('agents');
   const grid = $('#agent-cards');
   const sched = data.scheduler;
-
-  // Scheduler status
   const dot = $('#scheduler-dot');
   const label = $('#scheduler-label');
   const btn = $('#scheduler-btn');
   if (sched.running) {
     dot.className = 'inline-block w-2 h-2 rounded-full bg-secondary pulse-dot';
-    label.textContent = 'Running';
-    label.className = 'text-code-mono text-secondary';
+    label.textContent = 'Running'; label.className = 'text-code-mono text-secondary';
     btn.textContent = 'Stop Agents';
     btn.className = 'px-4 py-2 rounded-lg text-body-default font-medium cursor-pointer transition-colors bg-surface-container-high text-on-surface hover:bg-error/20 hover:text-error';
   } else {
     dot.className = 'inline-block w-2 h-2 rounded-full bg-outline';
-    label.textContent = 'Offline';
-    label.className = 'text-code-mono text-outline';
+    label.textContent = 'Offline'; label.className = 'text-code-mono text-outline';
     btn.textContent = 'Start Agents';
     btn.className = 'px-4 py-2 rounded-lg text-body-default font-medium cursor-pointer transition-colors bg-primary text-on-primary hover:opacity-90';
   }
-
-  // Agent cards
   grid.innerHTML = data.agents.map(a => {
     const lr = a.last_run;
     const isRunning = a.running;
     const statusColor = isRunning ? '#51df9c' : lr?.status==='completed' ? a.color : lr?.status==='failed' ? '#ff4444' : '#666';
     const statusText = isRunning ? 'Working...' : lr ? (lr.status==='completed' ? timeAgo(lr.finished_at) : lr.status) : 'Never run';
     const summary = lr?.summary || 'Waiting for first run';
-
     return `<div class="rounded-xl bg-surface-container border border-surface-container-high p-5 fade-in ${isRunning?'ring-1 ring-secondary/40':''}">
       <div class="flex items-start justify-between mb-4">
         <div class="flex items-center gap-3">
@@ -619,13 +913,11 @@ async function loadPipeline() {
       <div class="text-body-default text-on-surface-variant mb-3 line-clamp-2">${summary}</div>
       <div class="flex items-center gap-4 text-code-mono text-outline">
         <span>${a.total_runs} runs</span>
-        <span>${a.total_items} items processed</span>
+        <span>${a.total_items} items</span>
         <span>every ${Math.round(a.interval/60)}m</span>
       </div>
     </div>`;
   }).join('');
-
-  // Live log
   const logs = await api('agents/live-log?limit=30');
   const logEl = $('#agent-log');
   $('#log-count').textContent = `${logs.length} events`;
@@ -638,13 +930,10 @@ async function loadPipeline() {
       <span class="truncate">${l.msg}</span>
     </div>`;
   }).join('') || '<div class="text-outline py-4 text-center">No activity yet. Start the agents to begin.</div>';
-
-  // Auto-refresh when scheduler is running
   if (sched.running && !_agentPoll) {
     _agentPoll = setInterval(() => { if ($('#tab-pipeline').style.display!=='none') loadPipeline(); }, 5000);
   } else if (!sched.running && _agentPoll) {
-    clearInterval(_agentPoll);
-    _agentPoll = null;
+    clearInterval(_agentPoll); _agentPoll = null;
   }
 }
 
@@ -692,9 +981,9 @@ document.addEventListener('click', e => { if(!e.target.closest('#niche-btn')&&!e
   await loadNiches();
   loadStats();
   loadRadar();
+  loadTrends();
 })();
 
-// Keyboard shortcut
 document.addEventListener('keydown', e => {
   if(e.key==='Escape' && S.drawerSc) closeDrawer();
 });
