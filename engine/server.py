@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import re
+import statistics
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -65,6 +67,96 @@ def reels(niche: str | None = None, window: int = 7, sort: str = "outlier", limi
                 keep.append(r)
         rows = keep
     return rows[offset: offset + limit]
+
+
+HOOK_RULES = [
+    ("Comment CTA", re.compile(r"\bcomment\b", re.I)),
+    ("POV", re.compile(r"^\s*pov\b", re.I)),
+    ("Ranked list", re.compile(r"^\s*(top\s*\d+|\d+\s+\w+)|\brank(s|ed)?\b", re.I)),
+    ("Myth vs truth", re.compile(r"\b(myth|truth|stop|mistake|don'?t|never)\b", re.I)),
+    ("How-to", re.compile(r"\bhow\s+to\b", re.I)),
+]
+
+
+def hook_type(caption: str | None) -> str:
+    cap = (caption or "").strip()
+    first = re.split(r"[\n.!]", cap, maxsplit=1)[0]
+    for name, rx in HOOK_RULES:
+        if rx.search(cap if name == "Comment CTA" else first):
+            return name
+    return "Question" if first.endswith("?") else "Statement"
+
+
+def _radar_rows(niche: str | None, window: int) -> list[dict]:
+    rows = leaderboard(niche, window_days=window, sort="outlier", limit=100000)
+    tracked = set(c.lower() for c in (load_niche(niche).get("creators") or [])) if niche else set()
+    if tracked:  # collab posts land under co-authors' handles; keep the creators this niche tracks
+        rows = [r for r in rows if r["owner"] in tracked or r["is_self"]]
+    for r in rows:
+        r["hook_type"] = hook_type(r.get("caption"))
+    return rows
+
+
+@app.get("/api/radar")
+def radar(niche: str | None = None, window: int = 7, sort: str = "outlier", q: str | None = None,
+          decoded: int = 0, max_dur: int = 0, hook: str | None = None, min_outlier: float = 0,
+          limit: int = 18, offset: int = 0):
+    rows = [r for r in _radar_rows(niche, window) if not r["is_self"]]
+    if decoded:
+        rows = [r for r in rows if r["has_analysis"]]
+    if max_dur:
+        rows = [r for r in rows if r.get("duration") and r["duration"] <= max_dur]
+    if hook:
+        rows = [r for r in rows if r["hook_type"] == hook]
+    if min_outlier:
+        rows = [r for r in rows if (r["outlier"] or 0) >= min_outlier]
+    if q:
+        words = q.lower().split()
+        rows = [r for r in rows if all(w in " ".join(str(r.get(k) or "") for k in ("caption", "owner", "audio", "hook_type")).lower() for w in words)]
+    keys = {"outlier": lambda r: r["outlier"] or 0, "velocity": lambda r: r["velocity"] or 0,
+            "views": lambda r: r["views_best"], "likes": lambda r: int(r["likes"] or 0),
+            "comments": lambda r: int(r["comments"] or 0), "engagement": lambda r: r["engagement"] or 0,
+            "recent": lambda r: r["posted_at"] or ""}
+    rows.sort(key=keys.get(sort, keys["outlier"]), reverse=True)
+    return {"total": len(rows), "rows": rows[offset: offset + limit]}
+
+
+@app.get("/api/radar/side")
+def radar_side(niche: str | None = None, window: int = 7):
+    from datetime import datetime, timedelta, timezone
+    rows = [r for r in _radar_rows(niche, 0) if not r["is_self"]]
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=window or 3650)).isoformat()
+    recent = [r for r in rows if (r.get("posted_at") or "") >= cutoff]
+
+    def group(items, keyfn, min_n, min_owners=1):
+        g: dict[str, list[float]] = {}
+        owners: dict[str, set] = {}
+        for r in items:
+            for k in keyfn(r):
+                if k and r["outlier"] is not None:
+                    g.setdefault(k, []).append(r["outlier"])
+                    owners.setdefault(k, set()).add(r["owner"])
+        out = [{"name": k, "n": len(v), "creators": len(owners[k]), "median": round(statistics.median(v), 2),
+                "hit_rate": round(sum(x >= 3 for x in v) / len(v), 2)}
+               for k, v in g.items() if len(v) >= min_n and len(owners[k]) >= min_owners]
+        return sorted(out, key=lambda x: (x["median"], x["n"]), reverse=True)
+
+    audio = group(recent, lambda r: [r["audio"]] if r.get("audio") and r["audio"] != "Original audio" else [], 1)[:4]
+    tags = group(recent, lambda r: [t.lower() for t in r.get("hashtags") or []], 3, min_owners=2)[:5]
+    hooks = group(recent if len(recent) >= 40 else rows, lambda r: [r["hook_type"]], 5)
+    now = datetime.now(timezone.utc)
+    days = []
+    with db.connect() as con:
+        w, a = ("AND niche=?", (niche,)) if niche else ("", ())
+        for i in range(13, -1, -1):
+            d0 = (now - timedelta(days=i + 1)).isoformat()
+            d1 = (now - timedelta(days=i)).isoformat()
+            days.append(con.execute(f"SELECT COUNT(*) FROM reels WHERE first_seen >= ? AND first_seen < ? {w}", (d0, d1, *a)).fetchone()[0])
+        last48 = con.execute(f"SELECT COUNT(*) FROM reels WHERE first_seen >= ? {w}", ((now - timedelta(hours=48)).isoformat(), *a)).fetchone()[0]
+        new_today = con.execute(f"SELECT COUNT(*) FROM reels WHERE posted_at >= ? {w}", ((now - timedelta(hours=24)).isoformat(), *a)).fetchone()[0]
+    return {"audio": audio, "hashtags": tags, "hooks": hooks, "telemetry": {"days": days, "last48": last48},
+            "creators": len({r["owner"] for r in rows}), "reels": len(rows), "new_today": new_today,
+            "audio_original_share": round(sum(r.get("audio") == "Original audio" for r in recent) / len(recent), 2) if recent else None}
 
 
 @app.get("/api/reels/{sc}")

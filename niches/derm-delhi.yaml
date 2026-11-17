@@ -1,0 +1,20 @@
+# Niche recipe: Dermatology clinics (Delhi Laser Clinic competitor set).
+
+name: Dermatology Delhi
+slug: derm-delhi
+
+hashtags: []
+
+creators:
+  - doctorshailya
+  - dr.aanchal.md
+  - dr_sanyogita
+  - dermatdoc
+  - kosmoderma
+
+self_username: "delhilaserclinic"
+
+days_back: 365
+max_reels_per_creator: 15
+max_reels_per_hashtag: 0
+outlier_threshold: 3.0

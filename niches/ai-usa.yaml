@@ -1,0 +1,30 @@
+# Niche recipe: AI in Marketing, USA creators. Creator list from Influencer Hero's top US AI Instagram list (May 2026).
+
+name: AI in Marketing (USA)
+slug: ai-usa
+
+hashtags: []
+
+creators:
+  - rpn
+  - carterpcs_
+  - kallaway
+  - mar_antaya
+  - realrileybrown
+  - waltzinthestreet
+  - alberta.tech
+  - sundaskhalidd
+  - viktoria.semaan
+  - fabionkallaku
+  - justinfineberg_
+  - kimalban
+  - tech.unicorn
+  - tommycetty
+  - codingmermaid.ai
+
+self_username: ""
+
+days_back: 180
+max_reels_per_creator: 20
+max_reels_per_hashtag: 0
+outlier_threshold: 3.0
