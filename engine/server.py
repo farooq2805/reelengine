@@ -159,6 +159,230 @@ def radar_side(niche: str | None = None, window: int = 7):
             "audio_original_share": round(sum(r.get("audio") == "Original audio" for r in recent) / len(recent), 2) if recent else None}
 
 
+_KW = re.compile(r"[Cc]omment\s+(?:[\"“'‘]([A-Za-z0-9]+)[\"”'’]|([A-Z][A-Z0-9]{2,})\b)")
+
+
+def cta_keyword(caption: str | None) -> str | None:
+    m = _KW.search(caption or "")
+    return (m.group(1) or m.group(2)).upper() if m else None
+
+
+def first_line(caption: str | None) -> str:
+    for line in (caption or "").strip().splitlines():
+        line = line.strip()
+        if re.search(r"[A-Za-z]{3}", re.sub(r"#\w+", "", line)):
+            return line[:200]
+    return ""
+
+
+def _dur_bucket(d):
+    if not d:
+        return None
+    return "under 15s" if d < 15 else "15-30s" if d < 30 else "30-60s" if d < 60 else "over 60s"
+
+
+def _local_slot(posted_at: str | None, niche: str):
+    from datetime import datetime, timedelta, timezone
+    if not posted_at:
+        return None, None, None
+    usa = "usa" in (niche or "")
+    tz, label = (timezone(timedelta(hours=-5)), "ET") if usa else (timezone(timedelta(hours=5, minutes=30)), "IST")
+    t = datetime.fromisoformat(posted_at).astimezone(tz)
+    h = t.hour
+    slot = "6-10am" if 6 <= h < 10 else "10am-2pm" if h < 14 else "2-6pm" if h < 18 else "6-10pm" if h < 22 else "10pm-6am"
+    return slot, f"{t.strftime('%a %I:%M %p').replace(' 0', ' ')} {label}", label
+
+
+def _stat(vals):
+    vals = [v for v in vals if v is not None]
+    if not vals:
+        return None
+    return {"n": len(vals), "median": round(statistics.median(vals), 2), "hit_rate": round(sum(v >= 3 for v in vals) / len(vals), 2)}
+
+
+def reel_insights(row: dict) -> dict:
+    niche = row["niche"]
+    peers = _radar_rows(niche, 0)
+    mine = [p for p in peers if p["owner"] == row["owner"]]
+    v = row["views_best"] or 0
+
+    def med(items, fn):
+        vals = [fn(x) for x in items if fn(x) is not None]
+        return statistics.median(vals) if vals else None
+
+    eng_med = med(mine, lambda x: x.get("engagement"))
+    cr = lambda x: (int(x.get("comments") or 0) / x["views_best"] * 100) if x.get("views_best") else None
+    cr_med = med(mine, cr)
+    rank = sorted(mine, key=lambda x: x["views_best"] or 0, reverse=True)
+    rank_i = next((i for i, x in enumerate(rank, 1) if x["shortcode"] == row["shortcode"]), None)
+
+    htype = hook_type(row.get("caption"))
+    bucket = _dur_bucket(row.get("duration"))
+    slot, posted_local, tzl = _local_slot(row.get("posted_at"), niche)
+    is_orig = row.get("audio") == "Original audio"
+    hook_line = first_line(row.get("caption"))
+    kw = cta_keyword(row.get("caption"))
+
+    by = lambda fn: _stat([p["outlier"] for p in peers if fn(p)])
+    groups = {
+        "hook": by(lambda p: p["hook_type"] == htype),
+        "length": by(lambda p: _dur_bucket(p.get("duration")) == bucket) if bucket else None,
+        "slot": by(lambda p: _local_slot(p.get("posted_at"), niche)[0] == slot) if slot else None,
+        "audio": by(lambda p: (p.get("audio") == "Original audio") == is_orig) if row.get("audio") else None,
+        "niche": by(lambda p: True),
+    }
+
+    why = []
+    if row.get("outlier"):
+        why.append(f"{row['outlier']}x @{row['owner']}'s median of {row['creator_median']:,} views" +
+                   (f", their #{rank_i} of {len(mine)} recent reels." if rank_i else "."))
+    if row.get("engagement") and eng_med:
+        ratio = row["engagement"] / eng_med if eng_med else 0
+        if ratio >= 1.25:
+            why.append(f"Engagement {row['engagement']}% vs their usual {eng_med:.1f}%: people acted on it, not just watched.")
+        elif ratio <= 0.8:
+            why.append(f"Engagement {row['engagement']}% is below their usual {eng_med:.1f}%: reach came from non-followers, likely via shares or Explore.")
+    c = cr(row)
+    if c is not None and cr_med and c >= 2 * cr_med and int(row.get("comments") or 0) >= 50:
+        why.append(f"Comments ran {c / cr_med:.1f}x their normal rate ({int(row['comments']):,})" +
+                   (f", driven by the 'Comment {kw}' keyword." if kw else "."))
+    base = groups["niche"]["hit_rate"] if groups["niche"] else 0
+    odds = []
+    for key, label in (("hook", f"'{htype}' hooks"), ("length", f"{bucket} reels"), ("slot", f"reels posted {slot} {tzl}")):
+        g = groups[key]
+        if not g or g["n"] < 5:
+            continue
+        line = f"{label[0].upper() + label[1:]} hit 3x {round(g['hit_rate']*100)}% of the time in this niche (baseline {round(base*100)}%, n={g['n']})"
+        if g["hit_rate"] > base:
+            why.append(line + ": a tailwind.")
+        else:
+            odds.append(line)
+    if odds:
+        why.append("It beat the odds on: " + "; ".join(odds) + ". The content itself carried it.")
+
+    copy = []
+    if hook_line:
+        copy.append(f"Open with a line in the same shape: \"{hook_line[:120]}\"")
+    if kw:
+        copy.append(f"Add a comment keyword CTA (\"Comment {kw}\") and set up an auto-DM.")
+    if bucket in ("under 15s", "15-30s"):
+        copy.append(f"Keep it {bucket}; short reels break out most often here.")
+    copy.append("Speak over it in your own voice." if is_orig else f"It uses a licensed track ({row.get('audio')}); test the same audio while it's rising.")
+    return {"why": why, "copy": copy, "hook_type": htype, "first_line": hook_line, "cta_keyword": kw,
+            "posted_local": posted_local, "length_bucket": bucket, "audio": row.get("audio"), "groups": groups,
+            "creator": {"reels": len(mine), "median_views": row.get("creator_median"), "median_engagement": round(eng_med, 2) if eng_med else None,
+                        "rank": rank_i}, "hashtags": row.get("hashtags") or [], "views": v}
+
+
+ANGLES = {
+    "Comment CTA": ("Resource giveaway", "Show the finished result in the first 2 seconds, then offer the prompts, template or tool list behind it: \"Comment {KW} and I'll send it.\""),
+    "POV": ("First-person moment", "Film a \"POV:\" from inside an event, launch or workplace moment your audience can't access, within 48 hours of it happening."),
+    "Ranked list": ("Ranked list", "Rank 5 tools or products your audience argues about, worst to best. Hold number 1 for the last 3 seconds."),
+    "Myth vs truth": ("Myth vs truth", "Call out one thing your audience is doing wrong (\"Stop...\"), then show the right way with proof on screen."),
+    "How-to": ("Fast tutorial", "Show one workflow end to end. Result first, then the 3 steps, all in under 30 seconds."),
+    "Question": ("Question hook", "Open with the exact question your audience types into search, answer it in one line, then prove it."),
+    "Statement": ("Bold claim", "Lead with your strongest opinion or result as text on screen, then spend the rest proving it."),
+}
+TRAIT_DROP_ORDER = ["audio", "slot", "length", "cta", "hook"]
+
+
+def _traits(p: dict, niche: str) -> dict:
+    return {"hook": p.get("hook_type") or hook_type(p.get("caption")), "length": _dur_bucket(p.get("duration")),
+            "slot": _local_slot(p.get("posted_at"), niche)[0],
+            "cta": "yes" if re.search(r"\bcomment\b", p.get("caption") or "", re.I) else "no",
+            "audio": "original" if p.get("audio") == "Original audio" else ("licensed" if p.get("audio") else None)}
+
+
+def _q(vals: list[float], q: float) -> float:
+    s = sorted(vals)
+    if not s:
+        return 0.0
+    i = (len(s) - 1) * q
+    lo, hi = int(i), min(int(i) + 1, len(s) - 1)
+    return s[lo] + (s[hi] - s[lo]) * (i - lo)
+
+
+def _peers(niche: str) -> list[dict]:
+    peers = [p for p in _radar_rows(niche, 0) if not p["is_self"] and p["outlier"] is not None]
+    for p in peers:
+        p["_t"] = _traits(p, niche)
+    return peers
+
+
+def baseline_for(niche: str) -> dict:
+    self_user = (load_niche(niche).get("self_username") or "").lower()
+    if not self_user:
+        return {"account": None, "median": None, "n": 0}
+    with db.connect() as con:
+        vals = [int(x[0]) for x in con.execute(
+            "SELECT COALESCE(plays, views) FROM reels WHERE owner=? AND COALESCE(plays, views) > 0", (self_user,))]
+    return {"account": self_user, "median": round(statistics.median(vals)) if vals else None, "n": len(vals)}
+
+
+def forecast_from(peers: list[dict], want: dict, baseline: float | None, relax: bool = True) -> dict:
+    want = {k: v for k, v in want.items() if k in TRAIT_DROP_ORDER and v not in (None, "", "any")}
+    used = dict(want)
+    while True:
+        match = [p for p in peers if all(p["_t"].get(k) == v for k, v in used.items())]
+        if len(match) >= 12 or not used or not relax:
+            break
+        used.pop(next(k for k in TRAIT_DROP_ORDER if k in used))
+    vals = [p["outlier"] for p in match]
+    allv = [p["outlier"] for p in peers]
+    niche_med = statistics.median(allv) if allv else 1
+    lifts = []
+    for k, v in want.items():
+        sub = [p["outlier"] for p in peers if p["_t"].get(k) == v]
+        if len(sub) >= 5:
+            lifts.append({"trait": k, "value": v, "n": len(sub), "lift": round(statistics.median(sub) / niche_med, 2),
+                          "hit_rate": round(sum(x >= 3 for x in sub) / len(sub), 2)})
+    mult = {"low": round(_q(vals, .25), 2), "likely": round(_q(vals, .5), 2), "high": round(_q(vals, .75), 2),
+            "breakout": round(_q(vals, .9), 2)} if vals else None
+    views = {k: round(baseline * m) for k, m in mult.items()} if (mult and baseline) else None
+    return {"n": len(match), "used": used, "dropped": [k for k in want if k not in used], "multiple": mult, "views": views,
+            "hit_rate": round(sum(x >= 3 for x in vals) / len(vals), 2) if vals else None,
+            "niche_hit_rate": round(sum(x >= 3 for x in allv) / len(allv), 2) if allv else None, "lifts": lifts, "baseline": baseline}
+
+
+@app.get("/api/forecast")
+def forecast(niche: str, hook: str | None = None, length: str | None = None, slot: str | None = None,
+             cta: str | None = None, audio: str | None = None, baseline: float | None = None):
+    b = baseline or baseline_for(niche)["median"]
+    return forecast_from(_peers(niche), {"hook": hook, "length": length, "slot": slot, "cta": cta, "audio": audio}, b)
+
+
+@app.get("/api/ideas")
+def ideas(niche: str, window: int = 30, limit: int = 9, baseline: float | None = None):
+    from datetime import datetime, timedelta, timezone
+    peers = _peers(niche)
+    base = baseline_for(niche)
+    b = baseline or base["median"]
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=window or 3650)).isoformat()
+    pool = sorted([p for p in peers if (p.get("posted_at") or "") >= cutoff], key=lambda p: p["outlier"], reverse=True)
+    per, out = {}, []
+    for p in pool:
+        if per.get(p["owner"], 0) >= 2 or p["outlier"] < 2:
+            continue
+        per[p["owner"]] = per.get(p["owner"], 0) + 1
+        t = p["_t"]
+        name, angle = ANGLES.get(t["hook"], ANGLES["Statement"])
+        kw = cta_keyword(p.get("caption"))
+        out.append({"shortcode": p["shortcode"], "owner": p["owner"], "outlier": p["outlier"], "views": p["views_best"],
+                    "has_thumb": p["has_thumb"], "posted_at": p["posted_at"], "duration": p.get("duration"),
+                    "reference_hook": first_line(p.get("caption"))[:160],
+                    "format": name, "angle": angle.replace("{KW}", kw or "GUIDE"), "traits": t,
+                    "forecast": forecast_from(peers, t, b)})
+        if len(out) >= limit:
+            break
+    hooks = []
+    for h in sorted({p["_t"]["hook"] for p in peers}):
+        f = forecast_from(peers, {"hook": h}, b, relax=False)
+        if f["n"] >= 8:
+            hooks.append({"hook": h, "format": ANGLES.get(h, ANGLES["Statement"])[0], **f})
+    hooks.sort(key=lambda x: x["multiple"]["likely"] if x["multiple"] else 0, reverse=True)
+    return {"baseline": base, "baseline_used": b, "ideas": out, "formats": hooks, "reels": len(peers)}
+
+
 @app.get("/api/reels/{sc}")
 def reel(sc: str):
     with db.connect() as con:
@@ -169,8 +393,31 @@ def reel(sc: str):
             "SELECT ts, COALESCE(plays, views) views, likes, comments FROM snapshots WHERE shortcode=? ORDER BY ts", (sc,))]
     row = next((x for x in leaderboard(r["niche"], window_days=0, limit=100000) if x["shortcode"] == sc), dict(r))
     d = REELS / sc
-    return {**row, "snapshots": snaps, "analysis": _read(d / "analysis.json"),
-            "stylecard": _read(d / "stylecard.json"), "breakdown": _read(d / "breakdown.md")}
+    insights = reel_insights(row) if row.get("views_best") is not None else None
+    base = baseline_for(r["niche"])
+    fc = forecast_from(_peers(r["niche"]), _traits({**row, "hook_type": hook_type(row.get("caption"))}, r["niche"]), base["median"])
+    return {**row, "snapshots": snaps, "insights": insights, "forecast": fc, "baseline": base, "decoding": sc in _decoding,
+            "analysis": _read(d / "analysis.json"), "stylecard": _read(d / "stylecard.json"), "breakdown": _read(d / "breakdown.md")}
+
+
+_decoding: set[str] = set()
+
+
+@app.post("/api/reels/{sc}/decode")
+def reel_decode(sc: str):
+    import threading
+    from .decode import decode
+    if sc in _decoding:
+        return {"status": "running"}
+    _decoding.add(sc)
+
+    def run():
+        try:
+            decode(sc)
+        finally:
+            _decoding.discard(sc)
+    threading.Thread(target=run, daemon=True).start()
+    return {"status": "started"}
 
 
 class SaveBody(BaseModel):

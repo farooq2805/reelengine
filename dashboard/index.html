@@ -1,45 +1,89 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Reel Engine</title>
+<script>
+(function () {
+  let t = null;
+  try { t = localStorage.getItem('re-theme'); } catch (e) {}
+  if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', t === 'dark');
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.16"></script>
 <script>
-tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface":"#121315","surface-dim":"#121315","surface-bright":"#38393b","surface-container-lowest":"#0d0e10","surface-container-low":"#1b1c1e","surface-container":"#1f2022","surface-container-high":"#292a2c","surface-container-highest":"#343537","on-surface":"#e3e2e4","on-surface-variant":"#e3beb6","outline":"#aa8982","outline-variant":"#5b403a","surface-tint":"#ffb4a3","primary":"#ffb4a3","on-primary":"#630f00","primary-container":"#ff5a36","on-primary-container":"#5a0c00","secondary":"#51df9c","on-secondary":"#003822","secondary-container":"#00b173","tertiary":"#ebc300","on-tertiary":"#3b2f00","tertiary-container":"#cba900","error":"#ffb4ab","error-container":"#93000a","inverse-surface":"#e3e2e4","inverse-on-surface":"#303033","background":"#121315","on-background":"#e3e2e4"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{gutter:"1rem","space-xs":"0.25rem","gutter-desktop":"1.25rem",margin:"1rem","space-xl":"2rem","space-md":"0.75rem","space-lg":"1.25rem","margin-desktop":"1.5rem","space-sm":"0.5rem"},fontFamily:{"geist":["Geist","system-ui","sans-serif"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.02em",fontWeight:"600"}],"body-muted":["13px",{lineHeight:"20px",letterSpacing:"0",fontWeight:"400"}],"body-default":["13px",{lineHeight:"20px",letterSpacing:"-0.005em",fontWeight:"400"}],"badge-pill":["11px",{lineHeight:"14px",letterSpacing:"0.01em",fontWeight:"500"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.03em",fontWeight:"700"}],"code-mono":["11px",{lineHeight:"16px",letterSpacing:"0",fontWeight:"500"}],"label-micro":["10px",{lineHeight:"12px",letterSpacing:"0.08em",fontWeight:"600"}],"title-sm":["15px",{lineHeight:"22px",letterSpacing:"-0.01em",fontWeight:"600"}],"stat-numeric":["18px",{lineHeight:"22px",letterSpacing:"-0.02em",fontWeight:"700"}]}}}};
+const _tok = n => `rgb(var(--${n}) / <alpha-value>)`;
+const _names = ["surface","surface-dim","surface-bright","surface-container-lowest","surface-container-low","surface-container","surface-container-high","surface-container-highest","on-surface","on-surface-variant","outline","outline-variant","primary","on-primary","primary-container","on-primary-container","secondary","on-secondary","secondary-container","tertiary","on-tertiary","tertiary-container","error","error-container","background","on-background"];
+tailwind.config={darkMode:"class",theme:{extend:{colors:Object.fromEntries(_names.map(n => [n, _tok(n)])),borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{gutter:"1rem","space-xs":"0.25rem","gutter-desktop":"1.25rem",margin:"1rem","space-xl":"2rem","space-md":"0.75rem","space-lg":"1.25rem","margin-desktop":"1.5rem","space-sm":"0.5rem"},fontFamily:{"geist":["Inter","Segoe UI","system-ui","sans-serif"],"mono":["JetBrains Mono","Consolas","monospace"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.02em",fontWeight:"600"}],"body-muted":["13px",{lineHeight:"20px",letterSpacing:"0",fontWeight:"400"}],"body-default":["13px",{lineHeight:"20px",letterSpacing:"-0.005em",fontWeight:"400"}],"badge-pill":["11px",{lineHeight:"14px",letterSpacing:"0.01em",fontWeight:"500"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.03em",fontWeight:"700"}],"code-mono":["11px",{lineHeight:"16px",letterSpacing:"0",fontWeight:"500"}],"label-micro":["10px",{lineHeight:"12px",letterSpacing:"0.08em",fontWeight:"600"}],"title-sm":["15px",{lineHeight:"22px",letterSpacing:"-0.01em",fontWeight:"600"}],"stat-numeric":["18px",{lineHeight:"22px",letterSpacing:"-0.02em",fontWeight:"700"}]}}}};
 </script>
 <style>
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:#0d0e10}
-::-webkit-scrollbar-thumb{background:#343537;border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:#aa8982}
-body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
+/* Corporate palette: slate neutrals, one blue brand accent, green for growth, amber for hooks. */
+:root{
+  --surface:245 247 250; --surface-dim:245 247 250; --surface-bright:255 255 255; --background:245 247 250;
+  --surface-container-lowest:255 255 255; --surface-container-low:255 255 255; --surface-container:241 244 248;
+  --surface-container-high:226 231 238; --surface-container-highest:205 213 224;
+  --on-surface:15 23 42; --on-background:15 23 42; --on-surface-variant:51 65 85; --outline:100 116 139; --outline-variant:203 213 225;
+  --primary:29 78 216; --on-primary:255 255 255; --primary-container:37 99 235; --on-primary-container:255 255 255;
+  --secondary:4 120 87; --on-secondary:255 255 255; --secondary-container:5 150 105;
+  --tertiary:180 83 9; --on-tertiary:255 255 255; --tertiary-container:217 119 6;
+  --error:220 38 38; --error-container:254 226 226;
+  --shadow:0 1px 2px rgb(15 23 42 / .06), 0 1px 3px rgb(15 23 42 / .08);
+  color-scheme:light;
+}
+html.dark{
+  --surface:10 14 22; --surface-dim:10 14 22; --surface-bright:44 54 74; --background:10 14 22;
+  --surface-container-lowest:8 11 18; --surface-container-low:17 22 33; --surface-container:24 31 45;
+  --surface-container-high:36 45 63; --surface-container-highest:52 63 85;
+  --on-surface:231 236 244; --on-background:231 236 244; --on-surface-variant:178 189 207; --outline:134 147 170; --outline-variant:52 63 85;
+  --primary:129 161 255; --on-primary:10 14 22; --primary-container:59 110 246; --on-primary-container:255 255 255;
+  --secondary:52 211 153; --on-secondary:4 32 22; --secondary-container:16 185 129;
+  --tertiary:251 191 36; --on-tertiary:36 22 0; --tertiary-container:245 158 11;
+  --error:248 113 113; --error-container:69 10 10;
+  --shadow:0 1px 2px rgb(0 0 0 / .4);
+  color-scheme:dark;
+}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:rgb(var(--surface))}
+::-webkit-scrollbar-thumb{background:rgb(var(--surface-container-highest));border-radius:4px}
+body{font-family:Inter,'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;font-feature-settings:"cv11","ss01"}
+.text-code-mono,.mono{font-family:'JetBrains Mono',Consolas,monospace;font-variant-numeric:tabular-nums}
+.text-stat-numeric{font-variant-numeric:tabular-nums}
 @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
 .pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
 .reel-card{transition:all .3s ease}
-.reel-card:hover{transform:scale(1.015);box-shadow:0 20px 40px -12px rgba(255,90,54,.15)}
+.reel-card:hover{transform:scale(1.015);box-shadow:0 20px 40px -12px rgb(var(--primary) / .18)}
 .reel-card:hover video{opacity:1}
 .reel-card video{opacity:0;transition:opacity .3s}
-.tab-active{background:#1f2022;color:#e3e2e4;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.nav-tab{color:rgb(var(--on-surface-variant))}
+.tab-active{background:rgb(var(--primary) / .1);color:rgb(var(--primary))!important;font-weight:600}
 .drawer-open{transform:translateX(0)!important}
 .fade-in{animation:fadeIn .3s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .sparkline{display:inline-block;vertical-align:middle}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:500;color:#e3beb6;background:#1b1c1e;border:1px solid #292a2c;cursor:pointer}
-.chip:hover{border-color:#5b403a;color:#e3e2e4}
-.chip.on{color:#51df9c;background:rgba(81,223,156,.08);border-color:rgba(81,223,156,.35)}
-.chip:focus-visible,.rcard:focus-visible,button:focus-visible{outline:2px solid #ff5a36;outline-offset:2px}
-.side-h{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#aa8982;margin-bottom:8px}
-.rcard{background:#1b1c1e;border:1px solid #292a2c;border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;display:flex;flex-direction:column}
-.rcard:hover{transform:translateY(-2px);border-color:#5b403a;box-shadow:0 18px 40px -16px rgba(255,90,54,.25)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:500;color:rgb(var(--on-surface-variant));background:rgb(var(--surface-container-low));border:1px solid rgb(var(--surface-container-high));cursor:pointer}
+.chip:hover{border-color:rgb(var(--outline-variant));color:rgb(var(--on-surface))}
+.chip.on{color:rgb(var(--primary));background:rgb(var(--primary) / .08);border-color:rgb(var(--primary) / .4)}
+.chip:focus-visible,.rcard:focus-visible,button:focus-visible,.nav-tab:focus-visible{outline:2px solid rgb(var(--primary));outline-offset:2px}
+.side-h{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgb(var(--outline));margin-bottom:8px}
+.panel{background:rgb(var(--surface-container-low));border:1px solid rgb(var(--surface-container-high));border-radius:12px;box-shadow:var(--shadow)}
+.rcard{background:rgb(var(--surface-container-low));border:1px solid rgb(var(--surface-container-high));border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;display:flex;flex-direction:column}
+.rcard:hover{transform:translateY(-2px);border-color:rgb(var(--primary) / .45);box-shadow:0 16px 32px -16px rgb(var(--primary) / .35)}
 .rcard .cap{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.rbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.side-row{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;background:#1f2022;border:1px solid #292a2c}
-.side-row.click{cursor:pointer}.side-row.click:hover{border-color:#5b403a}
-.meter{height:3px;border-radius:2px;background:#343537;overflow:hidden}.meter>i{display:block;height:100%;background:#51df9c;border-radius:2px}
-@media (prefers-reduced-motion:reduce){.rcard,.reel-card{transition:none}.pulse-dot{animation:none}}
+.rbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.side-row{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;background:rgb(var(--surface-container));border:1px solid transparent}
+.side-row.click{cursor:pointer}.side-row.click:hover{border-color:rgb(var(--primary) / .4)}
+.meter{height:4px;border-radius:2px;background:rgb(var(--surface-container-high));overflow:hidden}.meter>i{display:block;height:100%;background:rgb(var(--secondary-container));border-radius:2px}
+.hooktag{background:rgb(var(--tertiary) / .12);color:rgb(var(--tertiary))}
+.range{position:relative;height:10px;border-radius:5px;background:rgb(var(--surface-container-high))}
+.range>i{position:absolute;top:0;bottom:0;border-radius:5px;background:rgb(var(--primary) / .35)}
+.range>b{position:absolute;top:-3px;width:4px;height:16px;border-radius:2px;background:rgb(var(--primary))}
+.field{width:100%;padding:8px 10px;border-radius:8px;background:rgb(var(--surface-container-low));border:1px solid rgb(var(--surface-container-high));color:rgb(var(--on-surface));font-size:13px}
+.field:focus{outline:none;border-color:rgb(var(--primary))}
+@media (prefers-reduced-motion:reduce){.rcard,.reel-card{transition:none}.pulse-dot,.fade-in{animation:none}}
 </style>
 </head>
 <body class="bg-surface text-on-surface font-geist min-h-screen selection:bg-primary-container selection:text-on-primary-container">
@@ -48,7 +92,7 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
 <header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/95 backdrop-blur-xl border-b border-surface-container-high">
 <div class="h-14 w-full px-4 lg:px-gutter-desktop flex items-center justify-between gap-4">
   <div class="flex items-center gap-3 shrink-0">
-    <span class="text-title-sm font-semibold tracking-tight text-on-surface">Reel Engine</span>
+    <span class="flex items-center gap-2"><span class="w-7 h-7 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">radar</span></span><span class="text-title-sm font-semibold tracking-tight text-on-surface">Reel Engine</span></span>
     <div class="h-4 w-px bg-surface-container-high"></div>
     <div class="relative">
       <button class="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-low hover:bg-surface-container-high cursor-pointer" id="niche-btn" onclick="document.getElementById('niche-dropdown').classList.toggle('hidden')">
@@ -60,6 +104,7 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
   </div>
   <nav class="flex items-center gap-1 shrink-0 overflow-x-auto" id="main-nav">
     <a class="nav-tab tab-active px-3 py-1.5 rounded text-body-default cursor-pointer whitespace-nowrap" data-tab="radar">Radar</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="ideas">Idea Lab</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="library">Library</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="hooks">Hook Bank</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="style-cards">Style Cards</a>
@@ -75,6 +120,9 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
       <span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary pulse-dot"></span>
       <span class="text-code-mono text-outline" id="stats-bar">Loading...</span>
     </div>
+    <button id="theme-btn" class="w-9 h-9 flex items-center justify-center rounded-lg border border-surface-container-high hover:bg-surface-container text-on-surface-variant" aria-label="Switch light or dark theme" title="Switch theme">
+      <span class="material-symbols-outlined text-[20px]" id="theme-icon">dark_mode</span>
+    </button>
   </div>
 </div>
 </header>
@@ -161,6 +209,62 @@ body{font-family:Geist,system-ui,sans-serif;overscroll-behavior:none}
       </div>
     </aside>
   </div>
+</div>
+
+<!-- IDEA LAB TAB -->
+<div id="tab-ideas" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+    <div>
+      <p class="text-label-micro uppercase tracking-wider text-primary mb-1">Idea Lab</p>
+      <h2 class="text-display-lg text-on-surface">What should you post next?</h2>
+      <p class="text-body-default text-on-surface-variant mt-1 max-w-2xl">Every idea here is built from a real outlier in this niche, with a view estimate for your account based on how reels with the same traits actually performed.</p>
+    </div>
+    <div class="panel p-4 w-full lg:w-80 shrink-0">
+      <label for="baseline-input" class="text-label-micro uppercase tracking-wider text-outline">Your median views per reel</label>
+      <input id="baseline-input" type="number" min="1" step="1" class="field mt-2 text-stat-numeric" placeholder="e.g. 1500">
+      <p class="text-code-mono text-outline mt-2" id="baseline-note">Estimates scale with this number.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-5 gap-5 mb-8">
+    <section class="panel p-5 xl:col-span-3">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-title-sm text-on-surface">Format leaderboard</h3>
+        <span class="text-code-mono text-outline" id="fmt-n"></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-body-default min-w-[560px]">
+          <thead><tr class="text-label-micro uppercase tracking-wider text-outline text-left">
+            <th class="py-2 pr-3 font-semibold">Format</th><th class="py-2 pr-3 font-semibold">Likely views for you</th><th class="py-2 pr-3 font-semibold w-[34%]">Range (25th to 75th pct)</th><th class="py-2 pr-3 font-semibold text-right">3x hit rate</th><th class="py-2 font-semibold text-right">Reels</th>
+          </tr></thead>
+          <tbody id="fmt-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="panel p-5 xl:col-span-2" id="planner">
+      <h3 class="text-title-sm text-on-surface mb-1">Plan a reel</h3>
+      <p class="text-body-muted text-outline mb-4">Pick the traits. The estimate updates from matching reels in this niche.</p>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="text-label-micro uppercase tracking-wider text-outline">Hook<select id="pl-hook" class="field mt-1 normal-case tracking-normal"></select></label>
+        <label class="text-label-micro uppercase tracking-wider text-outline">Length<select id="pl-length" class="field mt-1 normal-case tracking-normal"><option value="">Any</option><option>under 15s</option><option>15-30s</option><option>30-60s</option><option>over 60s</option></select></label>
+        <label class="text-label-micro uppercase tracking-wider text-outline">Post at <span id="pl-tz"></span><select id="pl-slot" class="field mt-1 normal-case tracking-normal"><option value="">Any</option><option>6-10am</option><option>10am-2pm</option><option>2-6pm</option><option>6-10pm</option><option>10pm-6am</option></select></label>
+        <label class="text-label-micro uppercase tracking-wider text-outline">Comment CTA<select id="pl-cta" class="field mt-1 normal-case tracking-normal"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+        <label class="text-label-micro uppercase tracking-wider text-outline col-span-2">Audio<select id="pl-audio" class="field mt-1 normal-case tracking-normal"><option value="">Any</option><option value="original">My voice (original audio)</option><option value="licensed">Licensed / trending track</option></select></label>
+      </div>
+      <div id="pl-out" class="mt-5"></div>
+    </section>
+  </div>
+
+  <div class="flex items-end justify-between mb-4">
+    <div><h3 class="text-headline-md text-on-surface">Idea starters</h3><p class="text-body-muted text-outline">From the strongest outliers in the selected window, at most two per creator.</p></div>
+    <div class="flex items-center p-1 rounded-lg bg-surface-container border border-surface-container-high">
+      <button class="idea-win px-3 py-1.5 rounded text-code-mono" data-w="7">7 days</button>
+      <button class="idea-win px-3 py-1.5 rounded text-code-mono" data-w="30">30 days</button>
+      <button class="idea-win px-3 py-1.5 rounded text-code-mono" data-w="0">All</button>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" id="idea-grid"></div>
+  <p class="text-code-mono text-outline mt-6 max-w-3xl">How estimates work: we take every reel in this niche with the same traits, look at how many times its creator's median views it got, and apply that range to your median. Low and high are the 25th and 75th percentiles; breakout is the 90th. If fewer than 12 reels match all traits, the least important trait is dropped and shown as such.</p>
 </div>
 
 <!-- LIBRARY TAB -->
@@ -379,6 +483,7 @@ function switchTab(tab) {
   $$('.nav-tab').forEach(t => { t.classList.toggle('tab-active', t.dataset.tab===tab); t.classList.toggle('text-on-surface-variant', t.dataset.tab!==tab); });
   $$('.tab-content').forEach(c => c.style.display = c.id === 'tab-'+tab ? '' : 'none');
   if(tab==='radar') { loadRadar(); loadTrends(); }
+  else if(tab==='ideas') loadIdeas();
   else if(tab==='library') loadLibrary();
   else if(tab==='hooks') loadHooks();
   else if(tab==='style-cards') loadCards();
@@ -436,7 +541,7 @@ function reelCard(r) {
 // ── Radar ──
 function radarCard(r) {
   const thumb = r.has_thumb ? `<img src="/media/${r.shortcode}/thumb.jpg" alt="Reel by @${esc(r.owner||'')}" class="absolute inset-0 w-full h-full object-cover" loading="eager">` : '';
-  const mult = r.outlier != null ? `<span class="rbadge" style="background:#ff5a36;color:#fff"><span class="material-symbols-outlined text-[13px]">bolt</span>${r.outlier >= 100 ? Math.round(r.outlier) : r.outlier.toFixed(1)}x outlier</span>` : '';
+  const mult = r.outlier != null ? `<span class="rbadge bg-primary-container text-on-primary-container"><span class="material-symbols-outlined text-[13px]">bolt</span>${r.outlier >= 100 ? Math.round(r.outlier) : r.outlier.toFixed(1)}x outlier</span>` : '';
   const dec = r.has_analysis ? `<span class="rbadge" style="background:rgba(0,177,115,.9);color:#eafff4"><span class="material-symbols-outlined text-[13px]">check_circle</span>Decoded style</span>` : '';
   const vel = r.velocity ? `<span class="shrink-0 px-1.5 py-0.5 rounded text-code-mono" style="background:rgba(81,223,156,.15);color:#51df9c">+${fmt(r.velocity)}/hr</span>` : '';
   const dur = r.duration ? Math.round(r.duration) + 's' : '–';
@@ -458,7 +563,7 @@ function radarCard(r) {
       </div>
       <div class="flex items-center justify-between gap-2 text-code-mono text-outline">
         <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span>${dur} · ${ago(r.posted_at)} ago</span>
-        <span class="px-2 py-0.5 rounded font-semibold" style="background:rgba(235,195,0,.12);color:#ebc300">Hook: ${esc(r.hook_type)}</span>
+        <span class="px-2 py-0.5 rounded font-semibold hooktag">Hook: ${esc(r.hook_type)}</span>
       </div>
     </div>
   </article>`;
@@ -491,10 +596,10 @@ function areaChart(vals, w = 280, h = 56) {
   const line = pts.map(p => p.join(',')).join(' ');
   const last = pts[pts.length - 1];
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="Reels collected per day, last 14 days">
-    <line x1="0" y1="${h-4}" x2="${w}" y2="${h-4}" stroke="#343537" stroke-width="1"/>
-    <polygon points="0,${h-4} ${line} ${w},${h-4}" fill="rgba(255,90,54,.15)"/>
-    <polyline points="${line}" fill="none" stroke="#ff5a36" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="#ff5a36"/></svg>
+    <line x1="0" y1="${h-4}" x2="${w}" y2="${h-4}" style="stroke:rgb(var(--surface-container-high))" stroke-width="1"/>
+    <polygon points="0,${h-4} ${line} ${w},${h-4}" style="fill:rgb(var(--primary) / .14)"/>
+    <polyline points="${line}" fill="none" style="stroke:rgb(var(--primary))" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" style="fill:rgb(var(--primary))"/></svg>
     <div class="flex justify-between text-code-mono text-outline mt-1"><span>14d ago</span><span>today</span></div>`;
 }
 
@@ -521,6 +626,128 @@ async function loadSide() {
   $('#tele-chart').innerHTML = areaChart(d.telemetry.days);
 }
 const loadTrends = loadSide;
+
+// ── Theme ──
+function paintThemeIcon() { $('#theme-icon').textContent = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode'; }
+paintThemeIcon();
+$('#theme-btn').addEventListener('click', () => {
+  const dark = !document.documentElement.classList.contains('dark');
+  document.documentElement.classList.toggle('dark', dark);
+  try { localStorage.setItem('re-theme', dark ? 'dark' : 'light'); } catch (e) {}
+  paintThemeIcon();
+});
+
+// ── Idea Lab ──
+S.ideaWin = 30;
+const bKey = () => 're-baseline-' + S.niche;
+function savedBaselineFor(n) { let v = null; try { v = +localStorage.getItem('re-baseline-' + n); } catch (e) {} return v > 0 ? v : null; }
+function savedBaseline() { let v = null; try { v = +localStorage.getItem(bKey()); } catch (e) {} return v > 0 ? v : null; }
+function myBaseline() { return savedBaseline() || S.serverBaseline || null; }
+function rangeBar(m, cap) {
+  const lo = Math.log10(0.1), hi = Math.log10(Math.max(cap, 3));
+  const pos = x => Math.max(0, Math.min(100, (Math.log10(Math.max(x, 0.1)) - lo) / (hi - lo) * 100));
+  return `<div class="range" role="img" aria-label="Likely ${m.likely}x, range ${m.low}x to ${m.high}x"><i style="left:${pos(m.low)}%;width:${Math.max(pos(m.high) - pos(m.low), 1.5)}%"></i><b style="left:calc(${pos(m.likely)}% - 2px)"></b></div>`;
+}
+const vOrX = (mult, b) => b ? fmt(mult * b) : mult + 'x';
+const TRAIT_LABEL = { hook: 'Hook', length: 'Length', slot: 'Time', cta: 'Comment CTA', audio: 'Audio' };
+
+function forecastPanel(f, b, compact = false) {
+  if (!f || !f.multiple) return `<p class="text-code-mono text-outline">Not enough matching reels to estimate.</p>`;
+  const m = f.multiple;
+  const lifts = f.lifts.map(l => {
+    const pct = Math.round((l.lift - 1) * 100);
+    const cls = pct >= 0 ? 'text-secondary bg-secondary/10' : 'text-error bg-error/10';
+    return `<span class="px-2 py-0.5 rounded text-code-mono ${cls}">${TRAIT_LABEL[l.trait]}: ${esc(String(l.value))} ${pct >= 0 ? '+' : ''}${pct}%</span>`;
+  }).join(' ');
+  return `<div class="${compact ? '' : 'rounded-xl bg-surface-container p-4'}">
+    <div class="flex items-end justify-between gap-3">
+      <div><p class="text-label-micro uppercase tracking-wider text-outline">${b ? 'Likely views for you' : 'Likely multiple of your median'}</p>
+      <p class="${compact ? 'text-headline-md' : 'text-display-lg'} text-on-surface mono">${vOrX(m.likely, b)}</p></div>
+      <div class="text-right"><p class="text-label-micro uppercase tracking-wider text-outline">Chance of 3x</p>
+      <p class="text-title-sm ${f.hit_rate >= f.niche_hit_rate ? 'text-secondary' : 'text-on-surface-variant'}">${Math.round(f.hit_rate * 100)}% <span class="text-code-mono text-outline">vs ${Math.round(f.niche_hit_rate * 100)}% niche</span></p></div>
+    </div>
+    <div class="mt-3">${rangeBar(m, Math.max(m.breakout, 3))}</div>
+    <div class="flex justify-between text-code-mono text-outline mt-1.5"><span>Low ${vOrX(m.low, b)}</span><span>High ${vOrX(m.high, b)}</span><span>Breakout ${vOrX(m.breakout, b)}</span></div>
+    ${compact ? '' : `<div class="flex flex-wrap gap-1.5 mt-3">${lifts}</div>`}
+    <p class="text-code-mono text-outline mt-2">Based on ${f.n} matching reels${f.dropped.length ? ` · relaxed: ${f.dropped.map(k => TRAIT_LABEL[k]).join(', ')}` : ''}</p>
+  </div>`;
+}
+
+function ideaCard(i, idx) {
+  const b = myBaseline();
+  const thumb = i.has_thumb ? `<img src="/media/${i.shortcode}/thumb.jpg" alt="Reference reel by @${esc(i.owner)}" class="w-full h-full object-cover">` : '';
+  const t = i.traits;
+  return `<article class="panel p-4 flex gap-4 fade-in">
+    <button class="w-24 sm:w-28 shrink-0 aspect-[9/16] rounded-lg overflow-hidden bg-surface-container relative" onclick="openDrawer('${i.shortcode}')" aria-label="Open reference reel">${thumb}
+      <span class="absolute top-1.5 left-1.5 rbadge bg-primary-container text-on-primary-container">${i.outlier >= 100 ? Math.round(i.outlier) : i.outlier.toFixed(1)}x</span></button>
+    <div class="flex-1 min-w-0 flex flex-col gap-2">
+      <div class="flex items-center justify-between gap-2"><span class="text-label-micro uppercase tracking-wider text-primary">${esc(i.format)}</span><span class="text-code-mono text-outline truncate">@${esc(i.owner)} · ${fmt(i.views)} views</span></div>
+      <p class="text-body-default text-on-surface">${esc(i.angle)}</p>
+      <p class="text-code-mono text-outline cap" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">Reference: "${esc(i.reference_hook || 'no caption')}"</p>
+      <div class="flex flex-wrap gap-1.5">${[t.length, t.slot && (t.slot + (S.niche.includes('usa') ? ' ET' : ' IST')), t.cta === 'yes' ? 'Comment CTA' : null, t.audio === 'original' ? 'Own voice' : t.audio === 'licensed' ? 'Trending audio' : null].filter(Boolean).map(x => `<span class="px-2 py-0.5 rounded bg-surface-container text-code-mono text-on-surface-variant">${esc(x)}</span>`).join('')}</div>
+      <div class="mt-1 pt-3 border-t border-surface-container-high">${forecastPanel(i.forecast, b, true)}</div>
+      <div class="flex gap-2 mt-1">
+        <button class="flex-1 px-3 py-2 rounded-lg bg-primary-container text-on-primary-container text-body-default font-semibold hover:brightness-110" onclick="planFrom(${idx})">Plan this reel</button>
+        <button class="px-3 py-2 rounded-lg border border-surface-container-high hover:bg-surface-container text-body-default text-on-surface" onclick="copyIdeaPrompt(${idx}, this)">Copy script prompt</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+async function loadIdeas() {
+  const saved = savedBaseline();
+  const d = await api(`ideas?niche=${S.niche}&window=${S.ideaWin}${saved ? '&baseline=' + saved : ''}`);
+  S.ideas = d; S.serverBaseline = d.baseline.median;
+  const b = myBaseline();
+  $('#baseline-input').value = b || '';
+  $('#baseline-note').textContent = d.baseline.account
+    ? (saved ? `Your own number. @${d.baseline.account}'s measured median is ${fmt(d.baseline.median)} (${d.baseline.n} reels).` : `Measured from @${d.baseline.account}'s last ${d.baseline.n} reels. Change it to plan for another account.`)
+    : (saved ? 'Saved for this niche.' : 'Your account isn\'t tracked in this niche. Enter your typical views to see estimates in views.');
+  $('#fmt-n').textContent = `${d.reels} reels analysed`;
+  const cap = Math.max(...d.formats.map(f => f.multiple?.high || 0), 3);
+  $('#fmt-body').innerHTML = d.formats.map(f => `<tr class="border-t border-surface-container-high">
+    <td class="py-3 pr-3"><span class="text-on-surface font-medium">${esc(f.format)}</span><span class="block text-code-mono text-outline">${esc(f.hook)} hook</span></td>
+    <td class="py-3 pr-3"><span class="text-title-sm text-on-surface mono">${vOrX(f.multiple.likely, b)}</span>${b ? `<span class="text-code-mono text-outline"> · ${f.multiple.likely}x</span>` : ''}</td>
+    <td class="py-3 pr-3">${rangeBar(f.multiple, cap)}<span class="text-code-mono text-outline">${vOrX(f.multiple.low, b)} to ${vOrX(f.multiple.high, b)}</span></td>
+    <td class="py-3 pr-3 text-right ${f.hit_rate >= f.niche_hit_rate ? 'text-secondary' : 'text-on-surface-variant'} mono">${Math.round(f.hit_rate * 100)}%</td>
+    <td class="py-3 text-right text-outline mono">${f.n}</td></tr>`).join('');
+  const hk = $('#pl-hook'), keep = hk.value;
+  hk.innerHTML = '<option value="">Any</option>' + ['Comment CTA', 'POV', 'Ranked list', 'Myth vs truth', 'How-to', 'Question', 'Statement'].map(h => `<option value="${h}">${h}</option>`).join('');
+  hk.value = keep;
+  $('#pl-tz').textContent = S.niche.includes('usa') ? '(ET)' : '(IST)';
+  $$('.idea-win').forEach(x => { const on = +x.dataset.w === S.ideaWin; x.classList.toggle('bg-surface-container-lowest', on); x.classList.toggle('text-primary', on); x.classList.toggle('font-semibold', on); x.classList.toggle('text-outline', !on); });
+  $('#idea-grid').innerHTML = d.ideas.length ? d.ideas.map(ideaCard).join('') : `<p class="text-outline">No reel above 2x in this window. Try 30 days or All.</p>`;
+  runPlanner();
+}
+
+let planTimer;
+async function runPlanner() {
+  const p = new URLSearchParams({ niche: S.niche });
+  ['hook', 'length', 'slot', 'cta', 'audio'].forEach(k => { const v = $('#pl-' + k).value; if (v) p.set(k, v); });
+  const b = myBaseline(); if (b) p.set('baseline', b);
+  const f = await api('forecast?' + p);
+  $('#pl-out').innerHTML = forecastPanel(f, b);
+}
+['hook', 'length', 'slot', 'cta', 'audio'].forEach(k => $('#pl-' + k).addEventListener('change', () => { clearTimeout(planTimer); planTimer = setTimeout(runPlanner, 100); }));
+$('#baseline-input').addEventListener('change', e => {
+  const v = Math.round(+e.target.value);
+  try { v > 0 ? localStorage.setItem(bKey(), v) : localStorage.removeItem(bKey()); } catch (err) {}
+  loadIdeas();
+});
+$$('.idea-win').forEach(x => x.addEventListener('click', () => { S.ideaWin = +x.dataset.w; loadIdeas(); }));
+
+function planFrom(idx) {
+  const t = S.ideas.ideas[idx].traits;
+  ['hook', 'length', 'slot', 'cta', 'audio'].forEach(k => { $('#pl-' + k).value = t[k] || ''; });
+  runPlanner();
+  $('#planner').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+async function copyIdeaPrompt(idx, btn) {
+  const i = S.ideas.ideas[idx], t = i.traits;
+  const text = `Use the script-studio skill for niche "${S.niche}". Write one ${i.format} reel modelled on reference ${i.shortcode} (@${i.owner}, ${i.outlier}x their median). Angle: ${i.angle} Target: ${t.length || 'any length'}, ${t.cta === 'yes' ? 'with' : 'without'} a comment-keyword CTA, ${t.audio === 'licensed' ? 'on a trending track' : 'in my own voice'}. Reference hook: "${i.reference_hook}".`;
+  try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; } catch (e) { prompt('Copy this prompt', text); }
+  setTimeout(() => { btn.textContent = 'Copy script prompt'; }, 2000);
+}
 
 $('#gen-script').addEventListener('click', async () => {
   const d = S.side; if (!d) return;
@@ -870,6 +1097,51 @@ async function openDrawer(sc) {
     <span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant">${ago(d.posted_at)} ago</span>
   </div>`;
 
+  const ins = d.insights;
+  if (ins) {
+    const pct = x => x == null ? '–' : Math.round(x * 100) + '%';
+    const row = (label, val, g) => `<div class="flex items-center justify-between gap-3 py-2 border-t border-surface-container-high first:border-t-0">
+        <span class="text-outline text-body-muted">${label}</span>
+        <span class="text-right"><span class="text-on-surface text-body-default">${esc(val || '–')}</span>${g ? `<span class="block text-code-mono ${g.hit_rate >= (ins.groups.niche?.hit_rate || 0) ? 'text-secondary' : 'text-outline'}">${pct(g.hit_rate)} hit 3x · ${g.median}x median · n=${g.n}</span>` : ''}</span></div>`;
+    html += `<div class="mb-5 p-4 rounded-xl border border-primary-container/30 bg-primary-container/5">
+      <h4 class="text-title-sm text-primary-container font-semibold mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">insights</span> Why this is an outlier</h4>
+      <ul class="space-y-2 mb-1">${ins.why.map(w => `<li class="text-body-default text-on-surface-variant flex gap-2"><span class="text-primary-container shrink-0">→</span><span>${esc(w)}</span></li>`).join('') || '<li class="text-outline">Not enough data on this creator yet.</li>'}</ul>
+    </div>
+    <div class="mb-5 p-4 rounded-xl border border-primary/25 bg-primary/5">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h4 class="text-title-sm text-primary font-semibold flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">query_stats</span> If you make this format</h4>
+        <button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-body-default font-semibold" onclick="closeDrawer();switchTab('ideas')">Open Idea Lab</button>
+      </div>
+      ${forecastPanel(d.forecast, savedBaselineFor(d.niche) || d.baseline?.median)}
+      ${(savedBaselineFor(d.niche) || d.baseline?.median) ? '' : '<p class="text-code-mono text-outline mt-2">Set your median views in Idea Lab to see this in views.</p>'}
+    </div>
+    <div class="mb-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="p-4 rounded-xl bg-surface-container border border-surface-container-high">
+        <h4 class="text-label-micro uppercase tracking-wider text-outline mb-1">Reel DNA vs niche</h4>
+        ${row('Hook type', ins.hook_type, ins.groups.hook)}
+        ${row('Length', d.duration ? Math.round(d.duration) + 's (' + ins.length_bucket + ')' : null, ins.groups.length)}
+        ${row('Posted', ins.posted_local, ins.groups.slot)}
+        ${row('Audio', ins.audio, ins.groups.audio)}
+        ${row('Comment CTA', ins.cta_keyword ? '"' + ins.cta_keyword + '"' : 'None', null)}
+        <p class="text-code-mono text-outline mt-2">Niche baseline: ${pct(ins.groups.niche?.hit_rate)} of reels hit 3x</p>
+      </div>
+      <div class="p-4 rounded-xl border border-secondary/30 bg-secondary/5">
+        <h4 class="text-label-micro uppercase tracking-wider text-secondary mb-2">Copy this</h4>
+        <ul class="space-y-2">${ins.copy.map(c => `<li class="text-body-default text-on-surface-variant flex gap-2"><span class="text-secondary shrink-0">+</span><span>${esc(c)}</span></li>`).join('')}</ul>
+        <h4 class="text-label-micro uppercase tracking-wider text-outline mt-4 mb-1">Creator baseline</h4>
+        <p class="text-body-muted text-on-surface-variant">${fmt(ins.creator.median_views)} median views · ${ins.creator.median_engagement ?? '–'}% engagement · ranked #${ins.creator.rank ?? '–'} of ${ins.creator.reels}</p>
+        ${ins.hashtags.length ? `<p class="text-code-mono text-outline mt-2">${ins.hashtags.slice(0, 8).map(t => '#' + esc(t)).join(' ')}</p>` : ''}
+      </div>
+    </div>`;
+  }
+  if (!d.analysis) {
+    html += `<div class="mb-5 p-4 rounded-xl border border-tertiary/30 bg-tertiary/5 flex items-center justify-between gap-4" id="decode-box">
+      <div><h4 class="text-title-sm text-tertiary font-semibold flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">auto_awesome</span>${d.decoding ? 'Decoding this reel…' : 'Full decode not run yet'}</h4>
+      <p class="text-body-muted text-outline mt-1">${d.decoding ? 'Downloading, transcribing and reading frames. Takes 1 to 10 minutes; this panel refreshes itself.' : 'Get the transcript, spoken hook, shot structure, pacing, colour grade and a remake guide.'}</p></div>
+      ${d.decoding ? '<span class="w-2 h-2 rounded-full bg-tertiary pulse-dot shrink-0"></span>' : `<button class="shrink-0 px-4 py-2 rounded-lg bg-tertiary text-on-tertiary text-title-sm font-semibold hover:brightness-110" onclick="decodeReel('${sc}')">Decode this reel</button>`}
+    </div>`;
+  }
+
   html += `<div class="mb-5">
     <video src="/media/${sc}/video.mp4" controls class="w-full max-w-xs rounded-lg border border-surface-container-high" style="aspect-ratio:9/16" onerror="this.outerHTML='<img src=/media/${sc}/thumb.jpg class=\\'w-full max-w-xs rounded-lg border border-surface-container-high\\' onerror=\\'this.style.display=none\\'>'"></video>
   </div>`;
@@ -990,6 +1262,12 @@ async function openDrawer(sc) {
   $('#drawer-overlay').style.display = '';
   $('#drawer').classList.add('drawer-open');
 }
+
+async function decodeReel(sc) {
+  await fetch(`/api/reels/${sc}/decode`, { method: 'POST' });
+  openDrawer(sc);
+}
+setInterval(() => { if (S.drawerSc && S.drawerData?.decoding) openDrawer(S.drawerSc); }, 15000);
 
 function closeDrawer() {
   $('#drawer').classList.remove('drawer-open');
