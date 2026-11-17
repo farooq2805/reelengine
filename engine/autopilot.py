@@ -139,13 +139,14 @@ def _generate_stylecard(shortcode: str):
 
     hook_text = m.get("hook_text", "")
     hook_type = "question" if hook_text.rstrip().endswith("?") else "statement" if len(hook_text.split()) < 8 else "story"
-    duration = m.get("duration", 0)
+    duration = m.get("duration") or 0
+    first_cut = m.get("first_cut_at") or min(3, duration or 3)
 
     structure = []
     if m.get("first_cut_at"):
         structure.append({"part": "hook", "start": 0, "end": round(m["first_cut_at"], 1), "what": hook_text[:80]})
     if duration > 10:
-        mid_start = m.get("first_cut_at", 3)
+        mid_start = first_cut
         mid_end = duration * 0.85
         structure.append({"part": "body", "start": round(mid_start, 1), "end": round(mid_end, 1), "what": "Main content"})
         structure.append({"part": "cta", "start": round(mid_end, 1), "end": round(duration, 1), "what": "Call to action / close"})
@@ -165,7 +166,7 @@ def _generate_stylecard(shortcode: str):
         "name": f"Style of {shortcode}",
         "summary": f"{m.get('shots', '?')} shots, {m.get('cuts_per_10s', '?')} cuts/10s, {m.get('words_per_minute', '?'):.0f} WPM" if m.get("words_per_minute") else f"{m.get('shots', '?')} shots",
         "source": shortcode,
-        "hook": {"type": hook_type, "text": hook_text, "seconds": round(m.get("first_cut_at", 3), 1)},
+        "hook": {"type": hook_type, "text": hook_text, "seconds": round(first_cut, 1)},
         "structure": structure,
         "pacing": {"cuts_per_10s": m.get("cuts_per_10s"), "avg_shot_seconds": m.get("avg_shot_seconds"), "wpm": m.get("words_per_minute")},
         "colour": {"grade": c.get("grade", ""), "palette": palette},
