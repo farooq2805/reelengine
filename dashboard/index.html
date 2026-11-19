@@ -104,6 +104,7 @@ body{font-family:Inter,'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;
   </div>
   <nav class="flex items-center gap-1 shrink-0 overflow-x-auto" id="main-nav">
     <a class="nav-tab tab-active px-3 py-1.5 rounded text-body-default cursor-pointer whitespace-nowrap" data-tab="radar">Radar</a>
+    <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="gaps">Content Gaps</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="ideas">Idea Lab</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="library">Library</a>
     <a class="nav-tab px-3 py-1.5 rounded text-body-muted text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface cursor-pointer whitespace-nowrap" data-tab="hooks">Hook Bank</a>
@@ -209,6 +210,28 @@ body{font-family:Inter,'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;
       </div>
     </aside>
   </div>
+</div>
+
+<!-- CONTENT GAPS TAB -->
+<div id="tab-gaps" class="tab-content px-4 lg:px-gutter-desktop" style="display:none">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-5">
+    <div>
+      <p class="text-label-micro uppercase tracking-wider text-primary mb-1">Content Gaps</p>
+      <h2 class="text-display-lg text-on-surface">What people ask that Reels don't answer</h2>
+      <p class="text-body-default text-on-surface-variant mt-1 max-w-3xl">Questions and complaints from search, forums and blogs, compared with every tracked Reel in this niche. High demand with little coverage is your next outlier.</p>
+    </div>
+    <button id="gap-refresh" class="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg border border-surface-container-high hover:bg-surface-container text-body-default text-on-surface"><span class="material-symbols-outlined text-[18px]">refresh</span>Refresh research</button>
+  </div>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5" id="gap-stats"></div>
+  <div class="flex flex-wrap items-center gap-2 mb-5" id="gap-filters">
+    <button class="chip on" data-g="open">Untapped and thin</button>
+    <button class="chip" data-g="Untapped">Untapped only</button>
+    <button class="chip" data-g="answered">Answered in text, missing on Reels</button>
+    <button class="chip" data-g="all">All topics</button>
+    <span class="ml-auto text-code-mono text-outline" id="gap-sources"></span>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4" id="gap-grid"></div>
+  <p class="text-code-mono text-outline mt-6 max-w-4xl">Gap score = demand (0-100) ÷ (1 + matching Reels ÷ 3). Demand weighs how often a topic is asked, where, how much engagement it got, and how urgent the wording is. Coverage is checked against captions and decoded transcripts of the Reels tracked here, not all of Instagram, so check a topic on Instagram before you shoot. Search suggestions show that people ask something, not how many.</p>
 </div>
 
 <!-- IDEA LAB TAB -->
@@ -483,6 +506,7 @@ function switchTab(tab) {
   $$('.nav-tab').forEach(t => { t.classList.toggle('tab-active', t.dataset.tab===tab); t.classList.toggle('text-on-surface-variant', t.dataset.tab!==tab); });
   $$('.tab-content').forEach(c => c.style.display = c.id === 'tab-'+tab ? '' : 'none');
   if(tab==='radar') { loadRadar(); loadTrends(); }
+  else if(tab==='gaps') loadGaps();
   else if(tab==='ideas') loadIdeas();
   else if(tab==='library') loadLibrary();
   else if(tab==='hooks') loadHooks();
@@ -636,6 +660,69 @@ $('#theme-btn').addEventListener('click', () => {
   try { localStorage.setItem('re-theme', dark ? 'dark' : 'light'); } catch (e) {}
   paintThemeIcon();
 });
+
+// ── Content Gaps ──
+S.gapFilter = 'open';
+const SRC_LABEL = { reddit: 'Reddit', quora: 'Quora', hackernews: 'Hacker News', google: 'Google', youtube: 'YouTube', blog: 'Blogs', news: 'News' };
+const GAP_STATUS = { Untapped: 'text-secondary bg-secondary/10', Thin: 'hooktag', Crowded: 'text-outline bg-surface-container' };
+function gapVisible(t) {
+  const f = S.gapFilter;
+  if (f === 'all') return true;
+  if (f === 'Untapped') return t.status === 'Untapped';
+  if (f === 'answered') return t.status !== 'Crowded' && t.answered_elsewhere;
+  return t.status !== 'Crowded';
+}
+function gapCard(t) {
+  const i = S.gaps.topics.indexOf(t), b = savedBaselineFor(S.niche) || S.gaps.baseline_used;
+  const ev = t.evidence.slice(0, 3).map(e => `<li class="flex gap-2"><span class="text-code-mono text-outline shrink-0 w-20 truncate">${SRC_LABEL[e.source] || e.source}</span><a href="${esc(e.url)}" target="_blank" rel="noopener" class="text-on-surface-variant hover:text-primary hover:underline min-w-0">${esc(e.title)}</a></li>`).join('');
+  const m = t.forecast?.multiple;
+  const covered = t.best_reel
+    ? `<button class="text-primary hover:underline" onclick="openDrawer('${t.best_reel.shortcode}')">${t.reels} Reel${t.reels > 1 ? 's' : ''}, best @${esc(t.best_reel.owner)}${t.best_reel.outlier ? ' at ' + t.best_reel.outlier + 'x' : ''}</button>`
+    : '<span class="text-secondary font-medium">No tracked Reel covers this</span>';
+  return `<article class="panel p-5 flex flex-col gap-3 fade-in">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0"><div class="flex items-center gap-2 mb-1"><span class="px-2 py-0.5 rounded text-label-micro uppercase tracking-wider ${GAP_STATUS[t.status]}">${t.status}</span><span class="text-code-mono text-outline">${esc(t.pain)}</span></div>
+      <h3 class="text-title-sm text-on-surface">${esc(t.topic)}</h3></div>
+      <div class="text-right shrink-0"><div class="text-display-lg text-primary mono leading-none">${t.gap}</div><div class="text-label-micro uppercase tracking-wider text-outline mt-1">Gap score</div></div>
+    </div>
+    <div class="rounded-lg bg-surface-container p-3"><p class="text-label-micro uppercase tracking-wider text-outline mb-1">Hook, in their words</p><p class="text-body-default text-on-surface font-medium">"${esc(t.hook)}"</p></div>
+    <ul class="space-y-1.5 text-body-muted">${ev}</ul>
+    <div class="grid grid-cols-3 gap-3 pt-3 border-t border-surface-container-high text-body-muted">
+      <div><div class="text-label-micro uppercase tracking-wider text-outline mb-0.5">Demand</div><div class="text-on-surface mono">${t.demand}/100</div></div>
+      <div><div class="text-label-micro uppercase tracking-wider text-outline mb-0.5">Signals</div><div class="text-on-surface mono">${t.signals}</div></div>
+      <div><div class="text-label-micro uppercase tracking-wider text-outline mb-0.5">${t.forecast?.dropped?.includes('hook') ? 'Your baseline' : b ? 'Est. views' : 'Est. multiple'}</div><div class="text-on-surface mono">${m ? vOrX(m.likely, b) : '–'}</div></div>
+    </div>
+    <p class="text-body-muted">${covered}${t.answered_elsewhere && t.status !== 'Crowded' ? ' · <span class="text-on-surface-variant">already answered in text online</span>' : ''}</p>
+    <p class="text-body-default text-on-surface-variant"><b class="text-on-surface">${esc(t.format)}:</b> ${esc(t.angle)}</p>
+    <div class="flex items-center gap-2 mt-auto">
+      <button class="flex-1 px-3 py-2 rounded-lg bg-primary-container text-on-primary-container text-body-default font-semibold hover:brightness-110" onclick="copyGapPrompt(${i}, this)">Copy script prompt</button>
+    </div>
+  </article>`;
+}
+function renderGaps() {
+  const list = S.gaps.topics.filter(gapVisible);
+  $('#gap-grid').innerHTML = list.map(gapCard).join('') || '<p class="text-outline">No topics match this filter.</p>';
+}
+async function loadGaps() {
+  const saved = savedBaselineFor(S.niche);
+  const d = await api(`gaps?niche=${S.niche}${saved ? '&baseline=' + saved : ''}`);
+  S.gaps = d;
+  const stat = (n, l) => `<div class="panel p-4"><div class="text-headline-md text-on-surface mono">${n}</div><div class="text-body-muted text-outline">${l}</div></div>`;
+  $('#gap-stats').innerHTML = stat(fmt(d.signals), 'audience signals') + stat(d.topics.length, 'pain-point topics') + stat(d.untapped, 'untapped topics') + stat(d.reels_checked, 'Reels checked');
+  $('#gap-sources').textContent = Object.entries(d.sources).map(([k, v]) => `${SRC_LABEL[k] || k} ${v}`).join(' · ');
+  $('#gap-refresh').disabled = d.refreshing;
+  $('#gap-refresh').lastChild.textContent = d.refreshing ? 'Refreshing…' : 'Refresh research';
+  renderGaps();
+  if (d.refreshing) setTimeout(() => { if (S.tab === 'gaps') loadGaps(); }, 8000);
+}
+$$('#gap-filters .chip').forEach(c => c.addEventListener('click', () => { S.gapFilter = c.dataset.g; $$('#gap-filters .chip').forEach(x => x.classList.toggle('on', x === c)); renderGaps(); }));
+$('#gap-refresh').addEventListener('click', async () => { await fetch(`/api/gaps/refresh?niche=${S.niche}`, { method: 'POST' }); loadGaps(); });
+async function copyGapPrompt(i, btn) {
+  const t = S.gaps.topics[i];
+  const text = `Use the script-studio skill for niche "${S.niche}". Write one ${t.format} reel on the untapped topic "${t.topic}". Open with the audience's own question: "${t.hook}". Angle: ${t.angle} Real audience wording to draw on: ${t.evidence.map(e => `"${e.title}"`).join('; ')}. Fact-check every claim.`;
+  try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; } catch (e) { prompt('Copy this prompt', text); }
+  setTimeout(() => { btn.textContent = 'Copy script prompt'; }, 2000);
+}
 
 // ── Idea Lab ──
 S.ideaWin = 30;

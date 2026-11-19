@@ -28,3 +28,29 @@ days_back: 180
 max_reels_per_creator: 20
 max_reels_per_hashtag: 0
 outlier_threshold: 3.0
+
+# Audience research: what people ask outside Instagram.
+demand:
+  gl: US
+  hl: en-US
+  seeds: [ai marketing, chatgpt for marketing, ai ads, ai content, ai seo, ai for small business]
+  hn: [AI marketing, AI generated content, AI SEO, AI ads]
+  news: [AI marketing problems, AI generated ads backlash, AI search visibility brands]
+  feeds:
+    - https://www.searchenginejournal.com/feed/
+    - https://www.marketingaiinstitute.com/blog/rss.xml
+    - https://blog.hubspot.com/marketing/rss.xml
+  anchors: [ai, chatgpt, gpt, llm, claude, gemini, artificial intelligence, machine learning]
+  stop: [ai, marketing, marketer, marketers, chatgpt, content, tools, tool, digital, generated, free, course, 2026, 2027]
+  topics:
+    - {name: "AI content sounds generic", terms: [humanize, sound human, sounds ai, sound ai, generic, ai slop, slop, human written, robotic, ai detector, brand voice]}
+    - {name: "Will Google penalize AI content?", terms: [penalize, penalise, ai seo, rank on google, hurt seo, helpful content, google traffic, seo traffic]}
+    - {name: "Getting found in ChatGPT and AI search", terms: [ai search, ai overview, ai overviews, geo, aeo, answer engine, generative engine, llm visibility, cited by chatgpt, ai visibility, rank in chatgpt]}
+    - {name: "Will AI replace marketers?", terms: [replace marketers, replace digital, replace marketing, replace human, marketing jobs, marketing job, replaced by ai, marketing career, entry level]}
+    - {name: "AI for small business on a budget", terms: [small business, small businesses, limited budget, solopreneur, local business, without increasing]}
+    - {name: "Proving ROI from AI", terms: [roi, roas, return on investment, measure ai, attribution, worth the cost, ai budget]}
+    - {name: "Do AI ads actually perform?", terms: [ai ads, ai ad, ai generated ads, ai ugc, ai creative, ad creative, meta advantage, performance max]}
+    - {name: "Consumer backlash and disclosure", terms: [backlash, disclosure, disclose, label ai, trust in ai, ftc, copyright, consumers hate]}
+    - {name: "Automating lead follow-up", terms: [lead follow, follow up, lead response, ai sdr, cold email, outreach, crm]}
+    - {name: "AI agents for marketing teams", terms: [ai agent, ai agents, marketing agent, agentic, marketing automation, n8n, zapier]}
+    - {name: "Prompts that actually work", terms: [prompt, prompts, prompting, custom gpt, claude skills]}

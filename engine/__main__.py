@@ -221,6 +221,16 @@ def main(argv=None):
     sp.set_defaults(fn=lambda a: print(__import__("engine.apify_import", fromlist=["x"]).import_file(
         a.file, a.niche, a.source)))
 
+    sp = sub.add_parser("demand", help="collect audience questions and pain points for a niche")
+    niche_arg(sp)
+    sp.set_defaults(fn=lambda a: print(__import__("engine.demand", fromlist=["x"]).collect(a.niche)))
+
+    sp = sub.add_parser("demand-import", help="import a Reddit or Quora export into a niche's audience research")
+    sp.add_argument("file")
+    sp.add_argument("--niche", default=default_niche)
+    sp.add_argument("--source", choices=["reddit", "quora"], required=True)
+    sp.set_defaults(fn=lambda a: print(__import__("engine.demand", fromlist=["x"]).import_file(a.file, a.niche, a.source), "items imported"))
+
     sp = sub.add_parser("harvest", help="fill in details for collected reel links (no login)")
     sp.add_argument("file", help="lines of '<hashtag> <shortcode> ...' or one link per line")
     sp.add_argument("--niche", default=default_niche)

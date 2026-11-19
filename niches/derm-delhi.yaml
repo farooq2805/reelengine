@@ -18,3 +18,25 @@ days_back: 365
 max_reels_per_creator: 15
 max_reels_per_hashtag: 0
 outlier_threshold: 3.0
+
+# Audience research: what people ask outside Instagram.
+demand:
+  gl: IN
+  hl: en-IN
+  seeds: [laser hair removal, pigmentation treatment, melasma, acne scars treatment, dermatologist in delhi, skin clinic]
+  hn: []
+  news: [laser hair removal India, pigmentation treatment India dermatologist, acne scars treatment India]
+  feeds: []
+  anchors: [laser, skin, acne, pigmentation, melasma, dermatolog, scar, hair removal, clinic]
+  stop: [laser, hair, removal, treatment, skin, clinic, dermatologist, delhi, india, near, me, face]
+  topics:
+    - {name: "Is laser hair removal permanent?", terms: [permanent, permanently, grow back, grows back, regrowth, hair growth after]}
+    - {name: "What laser really costs", terms: [cost, price, charges, packages, offer, cheapest, fees]}
+    - {name: "Is laser safe on Indian skin?", terms: [safe, safety, dark skin, indian skin, brown skin, burn, burns, side effect, side effects, skin type]}
+    - {name: "How many sessions do I need?", terms: [how many sessions, sessions, after one treatment, first session, gap between]}
+    - {name: "Choosing a clinic I can trust", terms: [genuine, which clinic, best clinic, good dermatologist, best dermatologist, reviews, trusted]}
+    - {name: "Melasma keeps coming back", terms: [melasma, came back, comes back, recurrence, rebound]}
+    - {name: "Pigmentation that won't fade", terms: [pigmentation, dark spots, dark patches, hyperpigmentation, uneven skin tone]}
+    - {name: "Which acne scar treatment works?", terms: [acne scar, acne scars, pimple marks, microneedling, co2 laser, subcision, prp]}
+    - {name: "Laser for men", terms: [for men, men's, male, beard, chest hair, back hair]}
+    - {name: "Facial hair and PCOS", terms: [pcos, facial hair, upper lip, chin hair, hormonal]}

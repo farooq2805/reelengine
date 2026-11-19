@@ -383,6 +383,38 @@ def ideas(niche: str, window: int = 30, limit: int = 9, baseline: float | None =
     return {"baseline": base, "baseline_used": b, "ideas": out, "formats": hooks, "reels": len(peers)}
 
 
+_gap_refreshing: set[str] = set()
+
+
+@app.get("/api/gaps")
+def gaps(niche: str, baseline: float | None = None):
+    from .demand import analyze
+    data = analyze(niche)
+    peers = _peers(niche)
+    base = baseline_for(niche)
+    b = baseline or base["median"]
+    for t in data["topics"]:
+        t["forecast"] = forecast_from(peers, {"hook": t["format"]}, b)
+    return {**data, "baseline": base, "baseline_used": b, "refreshing": niche in _gap_refreshing}
+
+
+@app.post("/api/gaps/refresh")
+def gaps_refresh(niche: str):
+    import threading
+    from .demand import collect
+    if niche in _gap_refreshing:
+        return {"status": "running"}
+    _gap_refreshing.add(niche)
+
+    def run():
+        try:
+            collect(niche)
+        finally:
+            _gap_refreshing.discard(niche)
+    threading.Thread(target=run, daemon=True).start()
+    return {"status": "started"}
+
+
 @app.get("/api/reels/{sc}")
 def reel(sc: str):
     with db.connect() as con:
